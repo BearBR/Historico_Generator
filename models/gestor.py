@@ -7,7 +7,7 @@ class Gestor(db.Model):
     escola_id = db.Column(db.Integer, db.ForeignKey('escolas.id'), nullable=False)
     nome = db.Column(db.String(200), nullable=False)
     cargo = db.Column(db.String(100), nullable=False)  # Diretor, Vice-Diretor, Secretário
-    data_inicio = db.Column(db.Date, nullable=False)
+    data_inicio = db.Column(db.Date, nullable=True)  # Permitir NULL
     data_fim = db.Column(db.Date)
     ativo = db.Column(db.Boolean, default=True)
     

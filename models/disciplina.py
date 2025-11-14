@@ -87,9 +87,6 @@ class ResultadoFinal(db.Model):
     ano_fim = db.Column(db.Integer)
     ativo = db.Column(db.Boolean, default=True)
     
-    # Relacionamentos
-    historicos = db.relationship('Historico', backref='resultado_final', lazy=True)
-    
     def __repr__(self):
         return f'<Resultado {self.codigo} - {self.descricao}>'
     

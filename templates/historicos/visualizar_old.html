@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizar Histórico{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-eye"></i> Histórico Escolar</h2>
+        <hr>
+    </div>
+</div>
+
+<!-- Dados do Aluno -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Dados do Aluno</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <p><strong>Nome:</strong> {{ historico.aluno.nome_completo }}</p>
+                <p><strong>Data de Nascimento:</strong> {{ historico.aluno.data_nascimento.strftime('%d/%m/%Y') if historico.aluno.data_nascimento }}</p>
+                <p><strong>CPF:</strong> {{ historico.aluno.cpf or '-' }}</p>
+                <p><strong>RG:</strong> {{ historico.aluno.rg or '-' }}</p>
+            </div>
+            <div class="col-md-4">
+                <p><strong>Naturalidade:</strong> {{ historico.aluno.naturalidade or '-' }}/{{ historico.aluno.uf_nascimento or '-' }}</p>
+                <p><strong>Nome da Mãe:</strong> {{ historico.aluno.nome_mae or '-' }}</p>
+                <p><strong>Nome do Pai:</strong> {{ historico.aluno.nome_pai or '-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dados da Escola -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Dados da Escola</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Escola:</strong> {{ historico.escola.nome }}</p>
+        <p><strong>Endereço:</strong> {{ historico.escola.endereco }}, {{ historico.escola.municipio }}/{{ historico.escola.estado }}</p>
+        <p><strong>IDT:</strong> {{ historico.escola.idt or '-' }}</p>
+    </div>
+</div>
+
+<!-- Informações do Histórico -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Informações do Ano Letivo</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <p><strong>Ano:</strong> {{ historico.ano }}</p>
+            </div>
+            <div class="col-md-3">
+                <p><strong>Série:</strong> {{ historico.serie }}</p>
+            </div>
+            <div class="col-md-3">
+                <p><strong>Modalidade:</strong> {{ historico.modalidade.nome }}</p>
+            </div>
+            <div class="col-md-3">
+                <p><strong>Resultado:</strong> 
+                    {% if historico.resultado_final %}
+                        <span class="badge bg-primary">{{ historico.resultado_final.codigo }}</span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Disciplinas e Notas -->
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">Disciplinas e Notas</h5>
+    </div>
+    <div class="card-body">
+        {% if historico.disciplinas %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Disciplina</th>
+                        <th class="text-center">Nota Final</th>
+                        {% if historico.exibir_faltas_frequencia %}
+                        <th class="text-center">Faltas</th>
+                        <th class="text-center">Frequência %</th>
+                        {% endif %}
+                        <th class="text-center">Resultado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for disc in historico.disciplinas %}
+                    <tr>
+                        <td>{{ disc.disciplina_historica.nome }}</td>
+                        <td class="text-center"><strong>{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</strong></td>
+                        {% if historico.exibir_faltas_frequencia %}
+                        <td class="text-center">{{ disc.faltas or '0' }}</td>
+                        <td class="text-center">{{ '%.1f' % disc.frequencia if disc.frequencia else '-' }}</td>
+                        {% endif %}
+                        <td class="text-center">
+                            <span class="badge 
+                                {% if disc.resultado == 'A' %}bg-success
+                                {% elif disc.resultado == 'R' %}bg-danger
+                                {% elif disc.resultado == 'T' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {{ disc.resultado or '-' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if historico.carga_horaria_total or historico.dias_letivos %}
+        <div class="mt-3">
+            {% if historico.carga_horaria_total %}
+            <p class="mb-2"><strong>Carga Horária Total:</strong> {{ historico.carga_horaria_total }} horas</p>
+            {% endif %}
+            {% if historico.dias_letivos %}
+            <p class="mb-2"><strong>Dias Letivos:</strong> {{ historico.dias_letivos }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Nenhuma disciplina lançada neste histórico.
+            <a href="{{ url_for('historicos.lancar_notas', id=historico.id) }}">Lançar notas agora</a>.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Conclusão de Curso -->
+{% if historico.conclusao_curso %}
+<div class="card mb-4 border-success">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-award"></i> Conclusão de Curso</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-success">
+            <p><strong><i class="bi bi-check-circle"></i> Este aluno concluiu o curso!</strong></p>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                {% if historico.data_conclusao %}
+                <p><strong>Data de Conclusão:</strong> {{ historico.data_conclusao.strftime('%d/%m/%Y') }}</p>
+                {% endif %}
+                {% if historico.amparo_conclusao %}
+                <p><strong>Amparo Legal:</strong> {{ historico.amparo_conclusao.tipo }} {{ historico.amparo_conclusao.numero }}</p>
+                <p><small class="text-muted">{{ historico.amparo_conclusao.descricao }}</small></p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                {% if historico.numero_certificado %}
+                <p><strong>Certificado Nº:</strong> {{ historico.numero_certificado }}</p>
+                {% endif %}
+                {% if historico.livro_registro %}
+                <p><strong>Livro:</strong> {{ historico.livro_registro }}</p>
+                {% endif %}
+                {% if historico.folha_registro %}
+                <p><strong>Folha:</strong> {{ historico.folha_registro }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Observações -->
+{% if historico.observacoes %}
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Observações</h5>
+    </div>
+    <div class="card-body">
+        <p>{{ historico.observacoes }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Botões -->
+<div class="d-flex justify-content-between mb-4">
+    <a href="{{ url_for('historicos.listar') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    <div>
+        <a href="{{ url_for('historicos.lancar_notas', id=historico.id) }}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Editar Notas
+        </a>
+        <a href="{{ url_for('historicos.gerar_pdf', id=historico.id) }}" class="btn btn-danger">
+            <i class="bi bi-file-pdf"></i> Gerar PDF
+        </a>
+    </div>
+</div>
+{% endblock %}

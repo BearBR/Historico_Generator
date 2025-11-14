@@ -20,10 +20,9 @@
                 <thead>
                     <tr>
                         <th>Aluno</th>
-                        <th>Escola</th>
-                        <th>Ano</th>
-                        <th>Série</th>
+                        <th>Anos Letivos</th>
                         <th>Modalidade</th>
+                        <th>Disciplinas</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -31,17 +30,40 @@
                     {% for historico in historicos %}
                     <tr>
                         <td>{{ historico.aluno.nome_completo }}</td>
-                        <td>{{ historico.escola.nome }}</td>
-                        <td>{{ historico.ano }}</td>
-                        <td>{{ historico.serie }}</td>
-                        <td>{{ historico.modalidade.nome }}</td>
                         <td>
-                            <a href="{{ url_for('historicos.visualizar', id=historico.id) }}" class="btn btn-sm btn-outline-info">
+                            {% if historico.anos_letivos %}
+                                {% for ano in historico.anos_letivos|sort(attribute='ano') %}
+                                    <span class="badge bg-secondary">{{ ano.ano }}/{{ ano.serie }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ historico.modalidade.nome if historico.modalidade else '-' }}</td>
+                        <td>
+                            {% set total_disc = namespace(count=0) %}
+                            {% for ano in historico.anos_letivos %}
+                                {% set total_disc.count = total_disc.count + ano.disciplinas|length %}
+                            {% endfor %}
+                            {{ total_disc.count }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('historicos.visualizar', id=historico.id) }}" 
+                               class="btn btn-sm btn-outline-info" 
+                               title="Visualizar">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{{ url_for('historicos.gerar_pdf', id=historico.id) }}" class="btn btn-sm btn-outline-danger">
+                            <a href="{{ url_for('historicos.gerar_pdf', id=historico.id) }}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               title="Gerar PDF">
                                 <i class="bi bi-file-pdf"></i>
                             </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger" 
+                                    onclick="confirmarRemocao({{ historico.id }}, '{{ historico.aluno.nome_completo }}')"
+                                    title="Remover Histórico">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -56,4 +78,56 @@
     <a href="{{ url_for('historicos.novo') }}">Crie o primeiro histórico</a>.
 </div>
 {% endif %}
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="modalConfirmarRemocao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Remoção
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja remover o histórico de <strong id="nomeAlunoRemover"></strong>?</p>
+                <p class="text-danger mb-0">
+                    <i class="bi bi-exclamation-circle"></i> 
+                    Esta ação <strong>NÃO PODE SER DESFEITA</strong> e removerá:
+                </p>
+                <ul class="text-danger">
+                    <li>Todos os anos letivos</li>
+                    <li>Todas as disciplinas e notas</li>
+                    <li>Dados de conclusão e assinaturas</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <form id="formRemover" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Sim, Remover
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let modalRemocao;
+
+document.addEventListener('DOMContentLoaded', function() {
+    modalRemocao = new bootstrap.Modal(document.getElementById('modalConfirmarRemocao'));
+});
+
+function confirmarRemocao(historicoId, nomeAluno) {
+    document.getElementById('nomeAlunoRemover').textContent = nomeAluno;
+    document.getElementById('formRemover').action = `/historicos/remover/${historicoId}`;
+    modalRemocao.show();
+}
+</script>
 {% endblock %}

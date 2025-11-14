@@ -40,7 +40,7 @@ class Escola(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamentos
-    historicos = db.relationship('Historico', backref='escola', lazy=True)
+    anos_letivos = db.relationship('HistoricoAnoLetivo', foreign_keys='HistoricoAnoLetivo.escola_id', lazy=True)
     gestores = db.relationship('Gestor', backref='escola', lazy=True)
     
     def __repr__(self):

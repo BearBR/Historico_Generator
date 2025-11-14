@@ -61,11 +61,11 @@ def mes_por_extenso(mes):
 
 
 def data_por_extenso(data):
-    """Converte data em formato por extenso"""
+    """Converte data em formato por extenso com dia em número"""
     if not data:
         return ''
     
-    dia = numero_por_extenso(data.day)
+    dia = data.day  # Mantém o dia como número
     mes = mes_por_extenso(data.month)
     ano = data.year
     
@@ -74,7 +74,7 @@ def data_por_extenso(data):
 
 def gerar_pdf_historico(historico):
     """
-    Gera PDF do histórico escolar
+    Gera PDF do histórico escolar completo (multi-ano)
     
     Args:
         historico: Objeto Historico com todas as relações carregadas
@@ -87,26 +87,36 @@ def gerar_pdf_historico(historico):
     dados = {
         'historico': historico,
         'aluno': historico.aluno,
-        'escola': historico.escola,
         'modalidade': historico.modalidade,
-        'disciplinas': historico.disciplinas,
+        'anos_letivos': sorted(historico.anos_letivos, key=lambda x: x.ano),
         'data_emissao_extenso': data_por_extenso(historico.data_emissao) if historico.data_emissao else data_por_extenso(datetime.now().date()),
         'data_conclusao_extenso': data_por_extenso(historico.data_conclusao) if historico.data_conclusao else '',
         'ano_atual': datetime.now().year
     }
     
-    # Calcular totais
-    total_ch = sum(d.carga_horaria or 0 for d in historico.disciplinas)
-    total_faltas = sum(d.faltas or 0 for d in historico.disciplinas)
-    aprovadas = sum(1 for d in historico.disciplinas if d.resultado == 'A')
-    reprovadas = sum(1 for d in historico.disciplinas if d.resultado == 'R')
+    # Calcular totais gerais (soma de todos os anos)
+    total_ch = 0
+    total_faltas = 0
+    total_disciplinas = 0
+    total_aprovadas = 0
+    total_reprovadas = 0
+    
+    for ano_letivo in historico.anos_letivos:
+        total_ch += ano_letivo.carga_horaria_total or 0
+        for disc in ano_letivo.disciplinas:
+            total_disciplinas += 1
+            total_faltas += disc.faltas or 0
+            if disc.resultado == 'A':
+                total_aprovadas += 1
+            elif disc.resultado == 'R':
+                total_reprovadas += 1
     
     dados['totais'] = {
         'carga_horaria': total_ch,
         'faltas': total_faltas,
-        'disciplinas': len(historico.disciplinas),
-        'aprovadas': aprovadas,
-        'reprovadas': reprovadas
+        'disciplinas': total_disciplinas,
+        'aprovadas': total_aprovadas,
+        'reprovadas': total_reprovadas
     }
     
     # Renderizar template HTML

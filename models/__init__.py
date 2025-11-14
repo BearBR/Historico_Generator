@@ -2,7 +2,7 @@
 from models.escola import Escola
 from models.aluno import Aluno
 from models.disciplina import DisciplinaHistorica, ModalidadeEnsino, AmparoLegal, ResultadoFinal
-from models.historico import Historico, HistoricoDisciplina
+from models.historico import Historico, HistoricoAnoLetivo, HistoricoAnoDisciplina, HistoricoDisciplina
 from models.gestor import Gestor
 
 __all__ = [
@@ -13,6 +13,8 @@ __all__ = [
     'AmparoLegal',
     'ResultadoFinal',
     'Historico',
+    'HistoricoAnoLetivo',
+    'HistoricoAnoDisciplina',
     'HistoricoDisciplina',
     'Gestor'
 ]

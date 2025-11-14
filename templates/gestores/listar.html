@@ -24,6 +24,7 @@
                         <th>Escola</th>
                         <th>Data Início</th>
                         <th>Status</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,6 +41,19 @@
                                 <span class="badge bg-secondary">Inativo</span>
                             {% endif %}
                         </td>
+                        <td>
+                            <a href="{{ url_for('gestores.editar', id=gestor.id) }}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger" 
+                                    onclick="confirmarRemocao({{ gestor.id }}, '{{ gestor.nome }}')"
+                                    title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -53,4 +67,51 @@
     <a href="{{ url_for('gestores.cadastrar') }}">Cadastre o primeiro gestor</a>.
 </div>
 {% endif %}
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalConfirmarRemocao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o gestor <strong id="nomeGestorRemover"></strong>?</p>
+                <p class="text-danger mb-0">
+                    <i class="bi bi-exclamation-circle"></i> 
+                    Esta ação <strong>NÃO PODE SER DESFEITA</strong>.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <form id="formRemover" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let modalRemocao;
+
+document.addEventListener('DOMContentLoaded', function() {
+    modalRemocao = new bootstrap.Modal(document.getElementById('modalConfirmarRemocao'));
+});
+
+function confirmarRemocao(gestorId, nomeGestor) {
+    document.getElementById('nomeGestorRemover').textContent = nomeGestor;
+    document.getElementById('formRemover').action = `/gestores/excluir/${gestorId}`;
+    modalRemocao.show();
+}
+</script>
 {% endblock %}

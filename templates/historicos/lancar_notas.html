@@ -17,14 +17,15 @@
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-12">
                 <p><strong>Aluno:</strong> {{ historico.aluno.nome_completo }}</p>
-                <p><strong>Escola:</strong> {{ historico.escola.nome }}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>Ano:</strong> {{ historico.ano }}</p>
-                <p><strong>Série:</strong> {{ historico.serie }}</p>
+                <p><strong>Nível:</strong> {{ historico.nivel }}</p>
                 <p><strong>Modalidade:</strong> {{ historico.modalidade.nome }}</p>
+                <p><strong>Anos Letivos:</strong> 
+                    {% for ano in historico.anos_letivos %}
+                        <span class="badge bg-primary">{{ ano.ano }}/{{ ano.serie }}</span>
+                    {% endfor %}
+                </p>
             </div>
         </div>
     </div>
@@ -54,79 +55,106 @@
 
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Disciplinas e Notas</h5>
+            <h5 class="mb-0">Disciplinas e Notas por Ano Letivo</h5>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Disciplina</th>
-                            <th style="width: 120px;">Nota Final</th>
-                            <th style="width: 100px;">CH (h)</th>
-                            <th style="width: 100px;">Faltas</th>
-                            <th style="width: 100px;">Freq. %</th>
-                            <th style="width: 120px;">Resultado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for disc_hist in disciplinas %}
-                        <tr>
-                            <td>
-                                <strong>{{ disc_hist.disciplina_historica.nome }}</strong>
-                                {% if disc_hist.disciplina_historica.codigo %}
-                                <br><small class="text-muted">{{ disc_hist.disciplina_historica.codigo }}</small>
+            {% for ano_letivo in historico.anos_letivos %}
+            <div class="mb-4">
+                <h5 class="text-primary border-bottom pb-2">
+                    <i class="bi bi-calendar3"></i> {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
+                    <small class="text-muted">({{ ano_letivo.escola.nome }})</small>
+                </h5>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Disciplina</th>
+                                <th style="width: 120px;">Nota Final</th>
+                                {% if historico.exibir_faltas_frequencia %}
+                                <th style="width: 100px;">Faltas</th>
+                                <th style="width: 100px;">Freq. %</th>
                                 {% endif %}
-                            </td>
-                            <td>
-                                <input type="number" class="form-control nota-input" 
-                                       name="nota_{{ disc_hist.id }}" 
-                                       id="nota_{{ disc_hist.id }}"
-                                       step="0.1" min="0" max="10"
-                                       value="{{ disc_hist.nota_final if disc_hist.nota_final else '' }}"
-                                       data-disciplina="{{ disc_hist.id }}"
-                                       placeholder="0.0">
-                            </td>
-                            <td>
-                                <input type="number" class="form-control ch-input" 
-                                       name="ch_{{ disc_hist.id }}" 
-                                       id="ch_{{ disc_hist.id }}"
-                                       value="{{ disc_hist.carga_horaria or disc_hist.disciplina_historica.carga_horaria_padrao }}"
-                                       min="0"
-                                       data-disciplina="{{ disc_hist.id }}">
-                            </td>
-                            <td>
-                                <input type="number" class="form-control faltas-input" 
-                                       name="faltas_{{ disc_hist.id }}" 
-                                       id="faltas_{{ disc_hist.id }}"
-                                       value="{{ disc_hist.faltas or 0 }}"
-                                       min="0"
-                                       data-disciplina="{{ disc_hist.id }}">
-                            </td>
-                            <td>
-                                <input type="text" class="form-control bg-light text-center" 
-                                       id="freq_{{ disc_hist.id }}" 
-                                       value="{{ '%.1f' % disc_hist.frequencia if disc_hist.frequencia else '100.0' }}"
-                                       readonly>
-                            </td>
-                            <td>
-                                <select class="form-select resultado-select" 
-                                        name="resultado_{{ disc_hist.id }}"
-                                        id="resultado_{{ disc_hist.id }}"
-                                        data-disciplina="{{ disc_hist.id }}">
-                                    <option value="">-</option>
-                                    <option value="A" {% if disc_hist.resultado == 'A' %}selected{% endif %}>A - Aprovado</option>
-                                    <option value="R" {% if disc_hist.resultado == 'R' %}selected{% endif %}>R - Reprovado</option>
-                                    <option value="T" {% if disc_hist.resultado == 'T' %}selected{% endif %}>T - Transferido</option>
-                                    <option value="EV" {% if disc_hist.resultado == 'EV' %}selected{% endif %}>EV - Evadido</option>
-                                    <option value="D" {% if disc_hist.resultado == 'D' %}selected{% endif %}>D - Desistente</option>
-                                </select>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <th style="width: 120px;">Resultado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for disc_ano in ano_letivo.disciplinas %}
+                            <tr>
+                                <td>
+                                    <strong>{{ disc_ano.disciplina_historica.nome }}</strong>
+                                    {% if disc_ano.disciplina_historica.codigo %}
+                                    <br><small class="text-muted">{{ disc_ano.disciplina_historica.codigo }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm nota-input" 
+                                           name="disc_{{ disc_ano.id }}_nota" 
+                                           id="nota_{{ disc_ano.id }}"
+                                           step="0.1" min="0" max="10"
+                                           value="{{ disc_ano.nota_final if disc_ano.nota_final else '' }}"
+                                           data-disciplina="{{ disc_ano.id }}"
+                                           placeholder="0.0">
+                                </td>
+                                <input type="hidden" name="disc_{{ disc_ano.id }}_ch" 
+                                       value="{{ disc_ano.carga_horaria or disc_ano.disciplina_historica.carga_horaria_padrao }}">
+                                {% if historico.exibir_faltas_frequencia %}
+                                <td>
+                                    <input type="number" class="form-control form-control-sm faltas-input" 
+                                           name="disc_{{ disc_ano.id }}_faltas" 
+                                           id="faltas_{{ disc_ano.id }}"
+                                           value="{{ disc_ano.faltas or 0 }}"
+                                           min="0"
+                                           data-disciplina="{{ disc_ano.id }}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm bg-light text-center" 
+                                           id="freq_{{ disc_ano.id }}" 
+                                           value="{{ '%.1f' % disc_ano.frequencia if disc_ano.frequencia else '100.0' }}"
+                                           readonly>
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <select class="form-select form-select-sm resultado-select" 
+                                            name="disc_{{ disc_ano.id }}_resultado"
+                                            id="resultado_{{ disc_ano.id }}"
+                                            data-disciplina="{{ disc_ano.id }}">
+                                        <option value="">-</option>
+                                        <option value="A" {% if disc_ano.resultado == 'A' %}selected{% endif %}>A - Aprovado</option>
+                                        <option value="R" {% if disc_ano.resultado == 'R' %}selected{% endif %}>R - Reprovado</option>
+                                        <option value="T" {% if disc_ano.resultado == 'T' %}selected{% endif %}>T - Transferido</option>
+                                        <option value="EV" {% if disc_ano.resultado == 'EV' %}selected{% endif %}>EV - Evadido</option>
+                                        <option value="D" {% if disc_ano.resultado == 'D' %}selected{% endif %}>D - Desistente</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Campos adicionais do ano letivo -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Dias Letivos</label>
+                        <input type="number" class="form-control" name="ano_{{ ano_letivo.id }}_dias_letivos" 
+                               value="{{ ano_letivo.dias_letivos or 200 }}" min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Resultado Final do Ano</label>
+                        <select class="form-select" name="ano_{{ ano_letivo.id }}_resultado_final_id">
+                            <option value="">Selecione...</option>
+                            {% for resultado in resultados_finais %}
+                            <option value="{{ resultado.id }}" {% if ano_letivo.resultado_final_id == resultado.id %}selected{% endif %}>
+                                {{ resultado.codigo }} - {{ resultado.descricao }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
             </div>
+            {% if not loop.last %}<hr>{% endif %}
+            {% endfor %}
         </div>
     </div>
 
@@ -137,13 +165,23 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-12 mb-3">
+                <div class="col-md-6 mb-3">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="conclusao_curso" 
                                name="conclusao_curso" value="1"
                                {% if historico.conclusao_curso %}checked{% endif %}>
                         <label class="form-check-label" for="conclusao_curso">
                             <strong>Marcar como Curso Concluído</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="exibir_faltas_frequencia" 
+                               name="exibir_faltas_frequencia" value="1"
+                               {% if historico.exibir_faltas_frequencia %}checked{% endif %}>
+                        <label class="form-check-label" for="exibir_faltas_frequencia">
+                            <strong>Exibir Faltas e Frequência</strong>
                         </label>
                     </div>
                 </div>

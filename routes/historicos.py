@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
-from models import Historico, Aluno, Escola, ModalidadeEnsino, HistoricoDisciplina, DisciplinaHistorica
+from models import Historico, Aluno, Escola, ModalidadeEnsino, HistoricoDisciplina, DisciplinaHistorica, HistoricoAnoLetivo, HistoricoAnoDisciplina, ResultadoFinal
 from extensions import db
 from datetime import datetime
 from pdf_generator.historico_pdf import gerar_pdf_historico
@@ -15,63 +15,73 @@ def listar():
 
 @bp.route('/novo', methods=['GET', 'POST'])
 def novo():
-    """Cria um novo histórico"""
+    """Cria um novo histórico completo (multi-ano)"""
     if request.method == 'POST':
         try:
-            # Verificar se há disciplinas selecionadas
-            disciplinas_selecionadas = request.form.getlist('disciplinas_selecionadas[]')
-            
-            if not disciplinas_selecionadas:
-                flash('Selecione pelo menos uma disciplina para o histórico!', 'warning')
-                alunos = Aluno.query.filter_by(ativo=True).all()
-                escolas = Escola.query.filter_by(ativa=True).all()
-                modalidades = ModalidadeEnsino.query.filter_by(ativa=True).all()
-                return render_template('historicos/novo.html', 
-                                     alunos=alunos, 
-                                     escolas=escolas, 
-                                     modalidades=modalidades)
-            
-            # Criar o histórico
+            # Criar o histórico base
             historico = Historico(
                 aluno_id=request.form['aluno_id'],
-                escola_id=request.form['escola_id'],
-                ano=int(request.form['ano']),
-                serie=request.form['serie'],
                 modalidade_id=request.form['modalidade_id'],
                 nivel=request.form['nivel'],
-                data_inicio=datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date() if request.form.get('data_inicio') else None,
-                data_termino=datetime.strptime(request.form['data_termino'], '%Y-%m-%d').date() if request.form.get('data_termino') else None,
                 escola_origem=request.form.get('escola_origem'),
                 municipio_origem=request.form.get('municipio_origem'),
                 uf_origem=request.form.get('uf_origem'),
-                observacoes=request.form.get('observacoes')
+                observacoes=request.form.get('observacoes'),
+                exibir_faltas_frequencia=bool(request.form.get('exibir_faltas_frequencia'))
             )
             
             db.session.add(historico)
-            db.session.flush()  # Obter o ID do histórico antes de adicionar disciplinas
+            db.session.flush()  # Obter o ID do histórico
             
-            # Adicionar disciplinas selecionadas ao histórico
-            for disciplina_id in disciplinas_selecionadas:
-                disciplina = DisciplinaHistorica.query.get(int(disciplina_id))
-                if disciplina:
-                    historico_disciplina = HistoricoDisciplina(
-                        historico_id=historico.id,
-                        disciplina_historica_id=disciplina.id,
-                        carga_horaria=disciplina.carga_horaria_padrao or 0,
-                        nota_final=0.0,  # Será preenchida no lançamento de notas
-                        faltas=0,
-                        frequencia=100.0,
-                        resultado='P'  # Pendente
-                    )
-                    db.session.add(historico_disciplina)
+            # Processar cada ano letivo
+            anos_keys = [key for key in request.form.keys() if key.startswith('anos[') and key.endswith('][ano]')]
+            total_disciplinas = 0
+            
+            # Obter disciplinas selecionadas globalmente
+            disciplinas_selecionadas = request.form.getlist('disciplinas_selecionadas[]')
+            print(f"Disciplinas selecionadas: {disciplinas_selecionadas}")
+            
+            for ano_key in anos_keys:
+                # Extrair índice do ano: anos[0][ano] -> 0
+                idx = ano_key.split('[')[1].split(']')[0]
+                
+                # Criar ano letivo
+                ano_letivo = HistoricoAnoLetivo(
+                    historico_id=historico.id,
+                    escola_id=int(request.form[f'anos[{idx}][escola_id]']),
+                    ano=int(request.form[f'anos[{idx}][ano]']),
+                    serie=request.form[f'anos[{idx}][serie]']
+                )
+                
+                db.session.add(ano_letivo)
+                db.session.flush()
+                
+                # Adicionar disciplinas selecionadas a este ano
+                for disc_id_str in disciplinas_selecionadas:
+                    disc_id = int(disc_id_str)
+                    disciplina = DisciplinaHistorica.query.get(disc_id)
+                    if disciplina:
+                        disc_ano = HistoricoAnoDisciplina(
+                            ano_letivo_id=ano_letivo.id,
+                            disciplina_historica_id=disc_id,
+                            carga_horaria=disciplina.carga_horaria_padrao or 0,
+                            nota_final=0.0,
+                            faltas=0,
+                            frequencia=100.0,
+                            resultado='P'  # Pendente
+                        )
+                        db.session.add(disc_ano)
+                        total_disciplinas += 1
             
             db.session.commit()
-            flash(f'Histórico criado com sucesso! {len(disciplinas_selecionadas)} disciplinas adicionadas.', 'success')
+            flash(f'Histórico criado com sucesso! {len(anos_keys)} anos letivos e {total_disciplinas} disciplinas adicionadas.', 'success')
             return redirect(url_for('historicos.lancar_notas', id=historico.id))
             
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao criar histórico: {str(e)}', 'danger')
+            import traceback
+            traceback.print_exc()
     
     # Dados para o formulário
     alunos = Aluno.query.filter_by(ativo=True).all()
@@ -85,35 +95,47 @@ def novo():
 
 @bp.route('/lancar-notas/<int:id>', methods=['GET', 'POST'])
 def lancar_notas(id):
-    """Lançar notas e frequência das disciplinas"""
+    """Lançar notas e frequência das disciplinas por ano letivo"""
     historico = Historico.query.get_or_404(id)
     
     if request.method == 'POST':
         try:
-            # Processar lançamento de notas para cada disciplina
-            disciplinas_historico = HistoricoDisciplina.query.filter_by(historico_id=id).all()
-            
-            for disc_hist in disciplinas_historico:
-                # Capturar dados do formulário
-                nota_key = f'nota_{disc_hist.id}'
-                ch_key = f'ch_{disc_hist.id}'
-                faltas_key = f'faltas_{disc_hist.id}'
-                resultado_key = f'resultado_{disc_hist.id}'
+            # Processar lançamento de notas para cada ano letivo
+            for ano_letivo in historico.anos_letivos:
+                # Atualizar dados do ano letivo
+                ano_letivo.resultado_final_id = int(request.form.get(f'ano_{ano_letivo.id}_resultado_final_id')) if request.form.get(f'ano_{ano_letivo.id}_resultado_final_id') else None
+                ano_letivo.dias_letivos = int(request.form.get(f'ano_{ano_letivo.id}_dias_letivos')) if request.form.get(f'ano_{ano_letivo.id}_dias_letivos') else None
                 
-                if nota_key in request.form:
-                    disc_hist.nota_final = float(request.form[nota_key]) if request.form[nota_key] else 0.0
-                    disc_hist.carga_horaria = int(request.form[ch_key]) if request.form.get(ch_key) else 0
-                    disc_hist.faltas = int(request.form[faltas_key]) if request.form.get(faltas_key) else 0
-                    disc_hist.resultado = request.form.get(resultado_key, 'P')
+                # Calcular carga horária total do ano
+                ch_total = 0
+                
+                # Processar disciplinas do ano
+                for disc_ano in ano_letivo.disciplinas:
+                    nota_key = f'disc_{disc_ano.id}_nota'
+                    ch_key = f'disc_{disc_ano.id}_ch'
+                    faltas_key = f'disc_{disc_ano.id}_faltas'
+                    resultado_key = f'disc_{disc_ano.id}_resultado'
                     
-                    # Calcular frequência
-                    if disc_hist.carga_horaria > 0:
-                        disc_hist.frequencia = ((disc_hist.carga_horaria - disc_hist.faltas) / disc_hist.carga_horaria) * 100
-                    else:
-                        disc_hist.frequencia = 100.0
+                    if nota_key in request.form:
+                        disc_ano.nota_final = float(request.form[nota_key]) if request.form[nota_key] else 0.0
+                        disc_ano.carga_horaria = int(request.form[ch_key]) if request.form.get(ch_key) else 0
+                        disc_ano.faltas = int(request.form[faltas_key]) if request.form.get(faltas_key) else 0
+                        disc_ano.resultado = request.form.get(resultado_key, 'P')
+                        
+                        # Calcular frequência
+                        if disc_ano.carga_horaria > 0:
+                            disc_ano.frequencia = ((disc_ano.carga_horaria - disc_ano.faltas) / disc_ano.carga_horaria) * 100
+                        else:
+                            disc_ano.frequencia = 100.0
+                        
+                        ch_total += disc_ano.carga_horaria
+                
+                # Atualizar carga horária total do ano
+                ano_letivo.carga_horaria_total = ch_total
             
             # Processar conclusão de curso
             historico.conclusao_curso = bool(request.form.get('conclusao_curso'))
+            historico.exibir_faltas_frequencia = bool(request.form.get('exibir_faltas_frequencia'))
             
             if historico.conclusao_curso:
                 historico.data_conclusao = datetime.strptime(request.form['data_conclusao'], '%Y-%m-%d').date() if request.form.get('data_conclusao') else None
@@ -126,7 +148,6 @@ def lancar_notas(id):
             historico.nome_diretor = request.form.get('nome_diretor')
             historico.nome_secretario = request.form.get('nome_secretario')
             historico.data_emissao = datetime.strptime(request.form['data_emissao'], '%Y-%m-%d').date() if request.form.get('data_emissao') else None
-            historico.dias_letivos = int(request.form['dias_letivos']) if request.form.get('dias_letivos') else None
             
             db.session.commit()
             flash('Notas e informações salvas com sucesso!', 'success')
@@ -135,18 +156,18 @@ def lancar_notas(id):
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao lançar notas: {str(e)}', 'danger')
+            import traceback
+            traceback.print_exc()
     
-    # Buscar disciplinas do histórico (já selecionadas)
-    disciplinas_historico = HistoricoDisciplina.query.filter_by(historico_id=id).all()
-    
-    # Buscar amparos legais para o select de conclusão
+    # Buscar amparos legais e resultados finais para os selects
     from models.disciplina import AmparoLegal
     amparos_legais = AmparoLegal.query.order_by(AmparoLegal.ano_inicio.desc()).all()
+    resultados_finais = ResultadoFinal.query.filter_by(ativo=True).all()
     
     return render_template('historicos/lancar_notas.html', 
-                         historico=historico, 
-                         disciplinas=disciplinas_historico,
-                         amparos_legais=amparos_legais)
+                         historico=historico,
+                         amparos_legais=amparos_legais,
+                         resultados_finais=resultados_finais)
 
 @bp.route('/visualizar/<int:id>')
 def visualizar(id):
@@ -156,15 +177,16 @@ def visualizar(id):
 
 @bp.route('/gerar-pdf/<int:id>')
 def gerar_pdf(id):
-    """Gera PDF do histórico"""
+    """Gera PDF do histórico completo"""
     try:
         historico = Historico.query.get_or_404(id)
         
         # Gerar PDF
         pdf_bytes = gerar_pdf_historico(historico)
         
-        # Criar nome do arquivo
-        nome_arquivo = f"Historico_{historico.aluno.nome_completo.replace(' ', '_')}_{historico.ano}_{historico.serie.replace(' ', '_')}.pdf"
+        # Criar nome do arquivo com anos
+        anos_str = '_'.join([str(ano.ano) for ano in sorted(historico.anos_letivos, key=lambda x: x.ano)])
+        nome_arquivo = f"Historico_{historico.aluno.nome_completo.replace(' ', '_')}_{anos_str}.pdf"
         
         # Retornar PDF para download
         return send_file(
@@ -176,4 +198,32 @@ def gerar_pdf(id):
         
     except Exception as e:
         flash(f'Erro ao gerar PDF: {str(e)}', 'danger')
+        import traceback
+        traceback.print_exc()
         return redirect(url_for('historicos.visualizar', id=id))
+
+@bp.route('/remover/<int:id>', methods=['POST'])
+def remover(id):
+    """Remove um histórico e todos os seus dados relacionados"""
+    try:
+        historico = Historico.query.get_or_404(id)
+        nome_aluno = historico.aluno.nome_completo
+        
+        # O SQLAlchemy com cascade='all, delete-orphan' já remove automaticamente:
+        # - anos_letivos
+        # - disciplinas de cada ano
+        # Apenas precisamos remover o histórico
+        
+        db.session.delete(historico)
+        db.session.commit()
+        
+        flash(f'Histórico de {nome_aluno} removido com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao remover histórico: {str(e)}', 'danger')
+        import traceback
+        traceback.print_exc()
+    
+    return redirect(url_for('historicos.listar'))
+

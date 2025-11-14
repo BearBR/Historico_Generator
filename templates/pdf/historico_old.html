@@ -25,7 +25,7 @@
 
         .header-container {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             padding: 15px 20px;
             border: 2px solid #003366;
             border-radius: 8px;
@@ -81,7 +81,7 @@
         }
 
         .secao {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .secao-titulo {
@@ -93,15 +93,11 @@
             margin-bottom: 10px;
         }
 
-        .ano-letivo-titulo {
-            background-color: #e3f2fd;
-            border: 1px solid #1976d2;
-            padding: 5px 10px;
-            font-weight: bold;
-            font-size: 11pt;
-            margin-top: 15px;
-            margin-bottom: 8px;
-            color: #1565c0;
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 20px;
+            margin-bottom: 15px;
         }
 
         .info-item {
@@ -121,7 +117,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             page-break-inside: auto;
         }
 
@@ -136,19 +132,19 @@
 
         th, td {
             border: 1px solid #000;
-            padding: 5px 6px;
+            padding: 6px 8px;
             text-align: left;
         }
 
         th {
             background-color: #e0e0e0;
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 10pt;
             text-align: center;
         }
 
         td {
-            font-size: 9pt;
+            font-size: 10pt;
         }
 
         .numero {
@@ -166,12 +162,9 @@
             font-weight: bold;
         }
 
-        .totais-ano {
+        .totais {
             background-color: #f9f9f9;
-            padding: 8px;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
-            font-size: 9pt;
+            font-weight: bold;
         }
 
         .observacoes {
@@ -194,8 +187,39 @@
             text-align: justify;
         }
 
+        .assinaturas {
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .assinatura {
+            display: inline-block;
+            text-align: center;
+            margin: 0 40px;
+            vertical-align: bottom;
+        }
+
+        .assinatura-linha {
+            border-bottom: 1px solid #000;
+            width: 180px;
+            margin: 50px auto 5px auto;
+            height: 1px;
+        }
+
+        .assinatura-nome {
+            font-weight: bold;
+            font-size: 10pt;
+            margin-bottom: 2px;
+            color: #000;
+        }
+
+        .assinatura-cargo {
+            font-size: 9pt;
+            color: #555;
+        }
+
         .rodape {
-            margin-top: 20px;
+            margin-top: 30px;
             padding-top: 15px;
             border-top: 1px solid #ccc;
             text-align: center;
@@ -223,28 +247,25 @@
     </style>
 </head>
 <body>
-    <!-- Cabeçalho - usa dados da primeira escola ou última -->
-    {% set primeira_escola = anos_letivos[0].escola if anos_letivos else None %}
-    {% if primeira_escola %}
+    <!-- Cabeçalho com Logo -->
     <div class="header-container">
-        {% if primeira_escola.logo %}
+        {% if escola.logo %}
         <div class="logo-escola">
-            <img src="/static/uploads/logos/{{ primeira_escola.logo }}" alt="Logo">
+            <img src="/static/uploads/logos/{{ escola.logo }}" alt="Logo">
         </div>
         {% endif %}
         
         <div class="header">
-            <p class="escola-nome">{{ primeira_escola.nome }}</p>
+            <p class="escola-nome">{{ escola.nome }}</p>
             <h1>Estado do Rio Grande do Sul</h1>
-            {% if primeira_escola.endereco %}
-            <p class="escola-info">{{ primeira_escola.endereco }} - {{ primeira_escola.municipio }}/{{ primeira_escola.estado }}{% if primeira_escola.telefone %} - Fone: {{ primeira_escola.telefone }}{% endif %}</p>
+            {% if escola.endereco %}
+            <p class="escola-info">{{ escola.endereco }} - {{ escola.municipio }}/{{ escola.estado }}{% if escola.telefone %} - Fone: {{ escola.telefone }}{% endif %}</p>
             {% endif %}
-            {% if primeira_escola.email %}
-            <p class="escola-info">{{ primeira_escola.email }}</p>
+            {% if escola.email %}
+            <p class="escola-info">{{ escola.email }}</p>
             {% endif %}
         </div>
     </div>
-    {% endif %}
 
     <!-- Identificação do Aluno -->
     <div class="secao">
@@ -291,82 +312,83 @@
         </table>
     </div>
 
-    <!-- Título do Histórico -->
+    <!-- Dados do Histórico -->
     <div class="secao">
         <div class="secao-titulo">
             {% if historico.conclusao_curso %}
                 CERTIFICADO DE CONCLUSÃO DE ENSINO {{ historico.nivel|upper }}
             {% else %}
-                HISTÓRICO ESCOLAR COMPLETO - ENSINO {{ historico.nivel|upper }}
+                HISTÓRICO ESCOLAR DE ENSINO {{ historico.nivel|upper }}
             {% endif %}
         </div>
-        {% if modalidade %}
-        <p style="margin-bottom: 10px;"><strong>Modalidade:</strong> {{ modalidade.nome }}</p>
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="width: 50%; border: 1px solid #ccc; padding: 10px; vertical-align: top;">
+                    <div class="info-item" style="margin-bottom: 8px;">
+                        <span class="info-label">Ano Letivo:</span>
+                        <span class="info-value">{{ historico.ano }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Série:</span>
+                        <span class="info-value">{{ historico.serie }}</span>
+                    </div>
+                </td>
+                <td style="width: 50%; border: 1px solid #ccc; border-left: none; padding: 10px; vertical-align: top;">
+                    <div class="info-item">
+                        <span class="info-label">Modalidade:</span>
+                        <span class="info-value">{{ modalidade.nome }}</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        {% if historico.escola_origem %}
+        <div style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9;">
+            <span class="info-label">Escola de Origem (Transferência):</span>
+            <span class="info-value">{{ historico.escola_origem }} - {{ historico.municipio_origem }}/{{ historico.uf_origem }}</span>
+        </div>
         {% endif %}
     </div>
 
-    <!-- Anos Letivos em 2 Colunas -->
-    {% for ano_letivo in anos_letivos %}
-        {% set is_par = loop.index0 % 2 == 1 %}
-        <div style="width: 49%; float: left; margin-bottom: 8px; {% if not is_par %}margin-right: 2%;{% endif %}">
-            <div class="ano-letivo-titulo" style="font-size: 9pt; padding: 2px 4px; margin-bottom: 2px;">
-                {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
-                {% if ano_letivo.escola.nome != primeira_escola.nome %}
-                <br><span style="font-size: 7pt; font-weight: normal;">{{ ano_letivo.escola.nome }}</span>
-                {% endif %}
-            </div>
-
-            <!-- Informações do Ano -->
-            <div style="font-size: 7pt; padding: 1px 3px; background-color: #f9f9f9; border: 1px solid #ddd; margin-bottom: 2px;">
-                <strong>Ano:</strong> {{ ano_letivo.ano }} | <strong>Dias:</strong> {{ ano_letivo.dias_letivos or '-' }} | <strong>CH:</strong> {{ ano_letivo.carga_horaria_total or '-' }}h
-            </div>
-
-            <!-- Disciplinas do Ano -->
-            {% if ano_letivo.disciplinas %}
-            <table style="font-size: 8pt; margin-bottom: 2px; width: 100%;">
-                <thead>
-                    <tr>
-                        <th style="width: 60%; padding: 2px; font-size: 8pt;">Disciplina</th>
-                        <th style="width: 12%; padding: 2px; font-size: 8pt;">Nota</th>
-                        {% if historico.exibir_faltas_frequencia %}
-                        <th style="width: 14%; padding: 2px; font-size: 8pt;">Freq.</th>
-                        {% endif %}
-                        <th style="width: {% if historico.exibir_faltas_frequencia %}14{% else %}28{% endif %}%; padding: 2px; font-size: 8pt;">Res.</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for disc in ano_letivo.disciplinas %}
-                    <tr>
-                        <td style="padding: 2px; font-size: 8pt;">{{ disc.disciplina_historica.nome }}</td>
-                        <td class="numero" style="padding: 2px; font-size: 8pt;">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
-                        {% if historico.exibir_faltas_frequencia %}
-                        <td class="numero" style="padding: 2px; font-size: 8pt;">{{ '%.0f' % disc.frequencia if disc.frequencia else '-' }}%</td>
-                        {% endif %}
-                        <td class="numero resultado-{{ disc.resultado }}" style="padding: 2px; font-size: 8pt;">{{ disc.resultado or '-' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Notas -->
+    <div class="secao">
+        <div class="secao-titulo">NOTAS E RESULTADO</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 70%;">Disciplina</th>
+                    <th style="width: 15%;">Nota Final</th>
+                    <th style="width: 15%;">Resultado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for disc in disciplinas %}
+                <tr>
+                    <td>{{ disc.disciplina_historica.nome }}</td>
+                    <td class="numero">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
+                    <td class="numero resultado-{{ disc.resultado }}">{{ disc.resultado or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 15px;">
+            {% if historico.carga_horaria_total %}
+            <p style="font-weight: bold; margin-bottom: 5px;">
+                Carga Horária Total: {{ historico.carga_horaria_total }} horas
+            </p>
             {% endif %}
-
-            <!-- Resultado Final do Ano -->
-            {% if ano_letivo.resultado_final %}
-            <div class="totais-ano" style="font-size: 7pt; padding: 2px 3px; margin-bottom: 2px;">
-                <strong>Resultado:</strong> {{ ano_letivo.resultado_final.codigo }}
-            </div>
+            {% if historico.dias_letivos %}
+            <p style="font-weight: bold; margin-bottom: 5px;">
+                Dias Letivos: {{ historico.dias_letivos }}
+            </p>
             {% endif %}
         </div>
-        
-        {% if is_par %}
-        <div style="clear: both;"></div>
-        {% endif %}
-    {% endfor %}
-    <div style="clear: both;"></div>
 
-    <!-- Legenda -->
-    <p style="font-size: 9pt; margin-top: 10px; margin-bottom: 15px;">
-        <strong>Legenda:</strong> A = Aprovado | R = Reprovado | T = Transferido | EV = Evadido | D = Desistente | P = Pendente
-    </p>
+        <p style="font-size: 9pt; margin-top: 10px; margin-bottom: 15px;">
+            <strong>Legenda:</strong> A = Aprovado | R = Reprovado | T = Transferido | EV = Evadido | D = Desistente
+        </p>
+    </div>
 
     <!-- Observações -->
     {% if historico.observacoes %}
@@ -384,8 +406,8 @@
         <div class="secao-titulo" style="margin-bottom: 10px;">CONCLUSÃO DE CURSO</div>
         <p>
             Certifico que <strong>{{ aluno.nome_completo }}</strong> 
-            concluiu o <strong>Ensino {{ historico.nivel }}</strong> 
-            em <strong>{{ historico.data_conclusao.strftime('%d/%m/%Y') if historico.data_conclusao else '-' }}</strong>,
+            concluiu o <strong>{{ historico.nivel }}</strong> 
+            em <strong>{{ historico.data_conclusao.strftime('%d/%m/%Y') if historico.data_conclusao else historico.ano }}</strong>,
             nos termos da legislação vigente.
         </p>
         
@@ -397,11 +419,9 @@
         </p>
         {% endif %}
 
-        {% if historico.numero_certificado or historico.livro_registro or historico.folha_registro %}
+        {% if historico.numero_certificado %}
         <div style="margin-top: 10px;">
-            {% if historico.numero_certificado %}
             <strong>Certificado Nº:</strong> {{ historico.numero_certificado }} &nbsp;&nbsp;
-            {% endif %}
             {% if historico.livro_registro %}
             <strong>Livro:</strong> {{ historico.livro_registro }} &nbsp;&nbsp;
             {% endif %}
@@ -448,13 +468,11 @@
     </div>
 
     <!-- Rodapé -->
-    {% if primeira_escola %}
     <div class="rodape">
-        <p>{{ primeira_escola.municipio }}, {{ data_emissao_extenso }}</p>
+        <p>{{ escola.municipio }}, {{ data_emissao_extenso }}</p>
         <p style="margin-top: 5px; font-size: 8pt;">
             Este documento foi gerado eletronicamente e possui validade legal.
         </p>
     </div>
-    {% endif %}
 </body>
 </html>

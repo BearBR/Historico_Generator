@@ -24,28 +24,27 @@ def por_ano(ano):
 @bp.route('/api/carregar-grade')
 def carregar_grade():
     """API: Carrega automaticamente grade curricular por ano, modalidade e nível"""
-    ano = request.args.get('ano', type=int)
+    ano = request.args.get('ano', type=int, default=1980)
     modalidade = request.args.get('modalidade', 'Regular')
     nivel = request.args.get('nivel', 'Fundamental')
     
-    if not ano:
-        return jsonify({'error': 'Ano é obrigatório'}), 400
-    
-    # Buscar modalidade
-    modalidade_obj = ModalidadeEnsino.query.filter_by(nome=modalidade).first()
-    
-    # Buscar disciplinas que se aplicam ao ano
-    query = DisciplinaHistorica.query.filter(
+    # Buscar TODAS as disciplinas ativas (temporariamente sem filtro de modalidade)
+    disciplinas = DisciplinaHistorica.query.filter(
         DisciplinaHistorica.ano_inicio <= ano,
         DisciplinaHistorica.ativa == True
     ).filter(
         db.or_(DisciplinaHistorica.ano_fim.is_(None), DisciplinaHistorica.ano_fim >= ano)
-    )
+    ).order_by(DisciplinaHistorica.nome).limit(50).all()
     
-    if modalidade_obj:
-        query = query.filter_by(modalidade_id=modalidade_obj.id)
-    
-    disciplinas = query.order_by(DisciplinaHistorica.nome).all()
+    return jsonify({
+        'disciplinas': [{
+            'id': d.id,
+            'nome': d.nome,
+            'codigo': d.codigo,
+            'carga_horaria_padrao': d.carga_horaria_padrao,
+            'serie': d.serie
+        } for d in disciplinas]
+    })
     
     # Filtrar por palavras-chave do nível e modalidade
     disciplinas_filtradas = []

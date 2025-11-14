@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Lançar Notas - {{ historico.aluno.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-pencil-square"></i> Lançar Notas e Frequência</h2>
+        <p class="text-muted">{{ historico.aluno.nome_completo }} - {{ historico.nivel }}</p>
+        <hr>
+    </div>
+</div>
+
+<form method="POST">
+    <!-- Anos Letivos -->
+    {% for ano_letivo in historico.anos_letivos|sort(attribute='ano') %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-calendar3"></i> {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
+                <small class="float-end">{{ ano_letivo.escola.nome }}</small>
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Dados do Ano Letivo -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Dias Letivos</label>
+                    <input type="number" class="form-control" 
+                           name="ano_{{ ano_letivo.id }}_dias_letivos" 
+                           value="{{ ano_letivo.dias_letivos or 200 }}" min="0">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Resultado Final do Ano</label>
+                    <select class="form-select" name="ano_{{ ano_letivo.id }}_resultado_final_id">
+                        <option value="">Selecione...</option>
+                        {% for resultado in resultados_finais %}
+                        <option value="{{ resultado.id }}" 
+                                {% if ano_letivo.resultado_final_id == resultado.id %}selected{% endif %}>
+                            {{ resultado.codigo }} - {{ resultado.descricao }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">CH Total</label>
+                    <input type="text" class="form-control bg-light" 
+                           value="{{ ano_letivo.carga_horaria_total or 0 }} horas" readonly>
+                </div>
+            </div>
+
+            <!-- Disciplinas do Ano -->
+            <h6 class="border-bottom pb-2 mb-3">Disciplinas</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Disciplina</th>
+                            <th style="width: 100px;">Nota Final</th>
+                            <th style="width: 100px;">CH (h)</th>
+                            {% if historico.exibir_faltas_frequencia %}
+                            <th style="width: 80px;">Faltas</th>
+                            <th style="width: 80px;">Freq. %</th>
+                            {% endif %}
+                            <th style="width: 100px;">Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for disc in ano_letivo.disciplinas %}
+                        <tr>
+                            <td>{{ disc.disciplina_historica.nome }}</td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="disc_{{ disc.id }}_nota" 
+                                       value="{{ disc.nota_final }}" 
+                                       step="0.1" min="0" max="10">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="disc_{{ disc.id }}_ch" 
+                                       value="{{ disc.carga_horaria }}" 
+                                       min="0">
+                            </td>
+                            {% if historico.exibir_faltas_frequencia %}
+                            <td>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="disc_{{ disc.id }}_faltas" 
+                                       value="{{ disc.faltas }}" 
+                                       min="0">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm bg-light" 
+                                       value="{{ '%.1f' % disc.frequencia }}" readonly>
+                            </td>
+                            {% endif %}
+                            <td>
+                                <select class="form-select form-select-sm" name="disc_{{ disc.id }}_resultado">
+                                    <option value="A" {% if disc.resultado == 'A' %}selected{% endif %}>Aprovado</option>
+                                    <option value="R" {% if disc.resultado == 'R' %}selected{% endif %}>Reprovado</option>
+                                    <option value="P" {% if disc.resultado == 'P' %}selected{% endif %}>Pendente</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Conclusão de Curso -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-award"></i> Conclusão de Curso</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="conclusao_curso" 
+                       name="conclusao_curso" value="1" 
+                       {% if historico.conclusao_curso %}checked{% endif %}
+                       onchange="toggleConclusao()">
+                <label class="form-check-label" for="conclusao_curso">
+                    <strong>Marcar como Conclusão de Curso</strong>
+                </label>
+            </div>
+
+            <div id="dadosConclusao" style="display: {% if historico.conclusao_curso %}block{% else %}none{% endif %};">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Data de Conclusão</label>
+                        <input type="date" class="form-control" name="data_conclusao" 
+                               value="{{ historico.data_conclusao }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Amparo Legal</label>
+                        <select class="form-select" name="amparo_conclusao_id">
+                            <option value="">Selecione...</option>
+                            {% for amparo in amparos_legais %}
+                            <option value="{{ amparo.id }}" 
+                                    {% if historico.amparo_conclusao_id == amparo.id %}selected{% endif %}>
+                                {{ amparo.descricao }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Número do Certificado</label>
+                        <input type="text" class="form-control" name="numero_certificado" 
+                               value="{{ historico.numero_certificado or '' }}">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Livro de Registro</label>
+                        <input type="text" class="form-control" name="livro_registro" 
+                               value="{{ historico.livro_registro or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Folha de Registro</label>
+                        <input type="text" class="form-control" name="folha_registro" 
+                               value="{{ historico.folha_registro or '' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assinaturas e Emissão -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-pen"></i> Assinaturas e Emissão</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Nome do Diretor</label>
+                    <input type="text" class="form-control" name="nome_diretor" 
+                           value="{{ historico.nome_diretor or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nome do Secretário</label>
+                    <input type="text" class="form-control" name="nome_secretario" 
+                           value="{{ historico.nome_secretario or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data de Emissão</label>
+                    <input type="date" class="form-control" name="data_emissao" 
+                           value="{{ historico.data_emissao or '' }}">
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="exibir_faltas_frequencia" 
+                               name="exibir_faltas_frequencia" value="1" 
+                               {% if historico.exibir_faltas_frequencia %}checked{% endif %}>
+                        <label class="form-check-label" for="exibir_faltas_frequencia">
+                            Exibir Faltas e Frequência no Histórico
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="d-flex justify-content-between mb-5">
+        <a href="{{ url_for('historicos.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+        <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Salvar Notas
+        </button>
+    </div>
+</form>
+
+<script>
+function toggleConclusao() {
+    const checkbox = document.getElementById('conclusao_curso');
+    const dadosConclusao = document.getElementById('dadosConclusao');
+    dadosConclusao.style.display = checkbox.checked ? 'block' : 'none';
+}
+</script>
+{% endblock %}
