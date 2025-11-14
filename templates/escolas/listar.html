@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Escolas - Sistema de Históricos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-building"></i> Escolas
+    </h1>
+    <a href="{{ url_for('escolas.cadastrar') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nova Escola
+    </a>
+</div>
+
+{% if escolas %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>IDT</th>
+                        <th>Nome</th>
+                        <th>Município</th>
+                        <th>Telefone</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for escola in escolas %}
+                    <tr>
+                        <td>{{ escola.idt or '-' }}</td>
+                        <td>{{ escola.nome }}</td>
+                        <td>{{ escola.municipio }}/{{ escola.estado }}</td>
+                        <td>{{ escola.telefone or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('escolas.editar', id=escola.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('escolas.deletar', id=escola.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        onclick="return confirm('Deseja realmente desativar esta escola?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nenhuma escola cadastrada.
+    <a href="{{ url_for('escolas.cadastrar') }}">Cadastre a primeira escola</a>.
+</div>
+{% endif %}
+{% endblock %}

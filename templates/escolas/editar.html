@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Escola{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-pencil"></i> Editar Escola</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="POST" enctype="multipart/form-data">
+    <!-- Informações Básicas -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Informações Básicas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label for="nome" class="form-label">Nome da Escola *</label>
+                    <input type="text" class="form-control" id="nome" name="nome" value="{{ escola.nome }}" required>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="logo" class="form-label">Logo da Escola</label>
+                    {% if escola.logo %}
+                    <div class="mb-2">
+                        <img src="{{ url_for('static', filename='uploads/logos/' + escola.logo) }}" 
+                             alt="Logo atual" style="max-width: 100px; max-height: 100px;">
+                        <small class="d-block text-muted">Logo atual</small>
+                    </div>
+                    {% endif %}
+                    <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                    <small class="text-muted">Formatos: JPG, PNG, GIF (máx. 2MB)</small>
+                </div>
+                
+                <div class="col-md-12 mb-3">
+                    <label for="endereco" class="form-label">Endereço *</label>
+                    <input type="text" class="form-control" id="endereco" name="endereco" value="{{ escola.endereco or '' }}" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="municipio" class="form-label">Município *</label>
+                    <input type="text" class="form-control" id="municipio" name="municipio" value="{{ escola.municipio or '' }}" required>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="estado" class="form-label">Estado *</label>
+                    <input type="text" class="form-control" id="estado" name="estado" value="{{ escola.estado or 'RS' }}" maxlength="2" required>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="telefone" class="form-label">Telefone</label>
+                    <input type="text" class="form-control" id="telefone" name="telefone" value="{{ escola.telefone or '' }}">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="email" class="form-label">E-mail</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ escola.email or '' }}" placeholder="escola@educar.rs.gov.br">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dados Legais - Criação -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Dados Legais - Criação</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="decreto_criacao" class="form-label">Decreto de Criação</label>
+                    <input type="text" class="form-control" id="decreto_criacao" name="decreto_criacao" value="{{ escola.decreto_criacao or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="data_criacao" class="form-label">Data de Criação</label>
+                    <input type="date" class="form-control" id="data_criacao" name="data_criacao" value="{{ escola.data_criacao or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="doe_criacao" class="form-label">Publicação DOE</label>
+                    <input type="date" class="form-control" id="doe_criacao" name="doe_criacao" value="{{ escola.doe_criacao or '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dados Legais - Reorganização -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Dados Legais - Reorganização</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="decreto_reorganizacao" class="form-label">Decreto de Reorganização</label>
+                    <input type="text" class="form-control" id="decreto_reorganizacao" name="decreto_reorganizacao" value="{{ escola.decreto_reorganizacao or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="data_reorganizacao" class="form-label">Data de Reorganização</label>
+                    <input type="date" class="form-control" id="data_reorganizacao" name="data_reorganizacao" value="{{ escola.data_reorganizacao or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="doe_reorganizacao" class="form-label">Publicação DOE</label>
+                    <input type="date" class="form-control" id="doe_reorganizacao" name="doe_reorganizacao" value="{{ escola.doe_reorganizacao or '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dados Legais - Alteração -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Dados Legais - Alteração de Nome</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="parecer_alteracao" class="form-label">Parecer de Alteração</label>
+                    <input type="text" class="form-control" id="parecer_alteracao" name="parecer_alteracao" value="{{ escola.parecer_alteracao or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="data_alteracao" class="form-label">Data de Alteração</label>
+                    <input type="date" class="form-control" id="data_alteracao" name="data_alteracao" value="{{ escola.data_alteracao or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="doe_alteracao" class="form-label">Publicação DOE</label>
+                    <input type="date" class="form-control" id="doe_alteracao" name="doe_alteracao" value="{{ escola.doe_alteracao or '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dados Administrativos -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Dados Administrativos</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="entidade_mantenedora" class="form-label">Entidade Mantenedora</label>
+                    <input type="text" class="form-control" id="entidade_mantenedora" name="entidade_mantenedora" 
+                           value="{{ escola.entidade_mantenedora or 'Governo do Estado do Rio Grande do Sul' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="cre" class="form-label">CRE (Coordenadoria Regional)</label>
+                    <input type="text" class="form-control" id="cre" name="cre" value="{{ escola.cre or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="sede_cre" class="form-label">Sede da CRE</label>
+                    <input type="text" class="form-control" id="sede_cre" name="sede_cre" value="{{ escola.sede_cre or '' }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="idt" class="form-label">IDT (Identificador)</label>
+                    <input type="text" class="form-control" id="idt" name="idt" value="{{ escola.idt or '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('escolas.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Atualizar Escola
+        </button>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Lançar Notas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-pencil-square"></i> Lançar Notas e Frequência</h2>
+        <hr>
+    </div>
+</div>
+
+<!-- Informações do Histórico -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Informações do Histórico</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Aluno:</strong> {{ historico.aluno.nome_completo }}</p>
+                <p><strong>Escola:</strong> {{ historico.escola.nome }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Ano:</strong> {{ historico.ano }}</p>
+                <p><strong>Série:</strong> {{ historico.serie }}</p>
+                <p><strong>Modalidade:</strong> {{ historico.modalidade.nome }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário de Notas -->
+<form method="POST">
+    <!-- Configuração da Média -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label for="media_minima" class="form-label"><strong>Média Mínima para Aprovação:</strong></label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="media_minima" name="media_minima" 
+                           value="6.0" step="0.1" min="0" max="10" required>
+                </div>
+                <div class="col-md-7">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> Disciplinas com nota abaixo deste valor serão marcadas automaticamente como Reprovado (R)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Disciplinas e Notas</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Disciplina</th>
+                            <th style="width: 120px;">Nota Final</th>
+                            <th style="width: 100px;">CH (h)</th>
+                            <th style="width: 100px;">Faltas</th>
+                            <th style="width: 100px;">Freq. %</th>
+                            <th style="width: 120px;">Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for disc_hist in disciplinas %}
+                        <tr>
+                            <td>
+                                <strong>{{ disc_hist.disciplina_historica.nome }}</strong>
+                                {% if disc_hist.disciplina_historica.codigo %}
+                                <br><small class="text-muted">{{ disc_hist.disciplina_historica.codigo }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <input type="number" class="form-control nota-input" 
+                                       name="nota_{{ disc_hist.id }}" 
+                                       id="nota_{{ disc_hist.id }}"
+                                       step="0.1" min="0" max="10"
+                                       value="{{ disc_hist.nota_final if disc_hist.nota_final else '' }}"
+                                       data-disciplina="{{ disc_hist.id }}"
+                                       placeholder="0.0">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control ch-input" 
+                                       name="ch_{{ disc_hist.id }}" 
+                                       id="ch_{{ disc_hist.id }}"
+                                       value="{{ disc_hist.carga_horaria or disc_hist.disciplina_historica.carga_horaria_padrao }}"
+                                       min="0"
+                                       data-disciplina="{{ disc_hist.id }}">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control faltas-input" 
+                                       name="faltas_{{ disc_hist.id }}" 
+                                       id="faltas_{{ disc_hist.id }}"
+                                       value="{{ disc_hist.faltas or 0 }}"
+                                       min="0"
+                                       data-disciplina="{{ disc_hist.id }}">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control bg-light text-center" 
+                                       id="freq_{{ disc_hist.id }}" 
+                                       value="{{ '%.1f' % disc_hist.frequencia if disc_hist.frequencia else '100.0' }}"
+                                       readonly>
+                            </td>
+                            <td>
+                                <select class="form-select resultado-select" 
+                                        name="resultado_{{ disc_hist.id }}"
+                                        id="resultado_{{ disc_hist.id }}"
+                                        data-disciplina="{{ disc_hist.id }}">
+                                    <option value="">-</option>
+                                    <option value="A" {% if disc_hist.resultado == 'A' %}selected{% endif %}>A - Aprovado</option>
+                                    <option value="R" {% if disc_hist.resultado == 'R' %}selected{% endif %}>R - Reprovado</option>
+                                    <option value="T" {% if disc_hist.resultado == 'T' %}selected{% endif %}>T - Transferido</option>
+                                    <option value="EV" {% if disc_hist.resultado == 'EV' %}selected{% endif %}>EV - Evadido</option>
+                                    <option value="D" {% if disc_hist.resultado == 'D' %}selected{% endif %}>D - Desistente</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conclusão de Curso e Assinaturas -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-award"></i> Conclusão de Curso e Assinaturas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="conclusao_curso" 
+                               name="conclusao_curso" value="1"
+                               {% if historico.conclusao_curso %}checked{% endif %}>
+                        <label class="form-check-label" for="conclusao_curso">
+                            <strong>Marcar como Curso Concluído</strong>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="campos_conclusao" style="{% if not historico.conclusao_curso %}display: none;{% endif %}">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="data_conclusao" class="form-label">Data de Conclusão</label>
+                        <input type="date" class="form-control" id="data_conclusao" name="data_conclusao"
+                               value="{{ historico.data_conclusao.strftime('%Y-%m-%d') if historico.data_conclusao else '' }}">
+                    </div>
+
+                    <div class="col-md-8 mb-3">
+                        <label for="amparo_conclusao_id" class="form-label">Amparo Legal da Conclusão</label>
+                        <select class="form-select" id="amparo_conclusao_id" name="amparo_conclusao_id">
+                            <option value="">Selecione...</option>
+                            {% for amparo in amparos_legais %}
+                            <option value="{{ amparo.id }}" 
+                                {% if historico.amparo_conclusao_id == amparo.id %}selected{% endif %}>
+                                {{ amparo.tipo }} {{ amparo.numero }} - {{ amparo.descricao }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="numero_certificado" class="form-label">Nº do Certificado</label>
+                        <input type="text" class="form-control" id="numero_certificado" name="numero_certificado"
+                               value="{{ historico.numero_certificado or '' }}"
+                               placeholder="Ex: 001/2023">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="livro_registro" class="form-label">Livro</label>
+                        <input type="text" class="form-control" id="livro_registro" name="livro_registro"
+                               value="{{ historico.livro_registro or '' }}"
+                               placeholder="Ex: 01">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="folha_registro" class="form-label">Folha</label>
+                        <input type="text" class="form-control" id="folha_registro" name="folha_registro"
+                               value="{{ historico.folha_registro or '' }}"
+                               placeholder="Ex: 25">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="nome_diretor" class="form-label">Nome do Diretor(a)</label>
+                    <input type="text" class="form-control" id="nome_diretor" name="nome_diretor"
+                           value="{{ historico.nome_diretor or '' }}"
+                           placeholder="Nome completo">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="nome_secretario" class="form-label">Nome do Secretário(a)</label>
+                    <input type="text" class="form-control" id="nome_secretario" name="nome_secretario"
+                           value="{{ historico.nome_secretario or '' }}"
+                           placeholder="Nome completo">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="data_emissao" class="form-label">Data de Emissão</label>
+                    <input type="date" class="form-control" id="data_emissao" name="data_emissao"
+                           value="{{ historico.data_emissao.strftime('%Y-%m-%d') if historico.data_emissao else '' }}">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="dias_letivos" class="form-label">Dias Letivos</label>
+                    <input type="number" class="form-control" id="dias_letivos" name="dias_letivos"
+                           value="{{ historico.dias_letivos or '' }}"
+                           placeholder="Ex: 200" min="0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('historicos.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+        <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-save"></i> Salvar Tudo
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle campos de conclusão
+document.getElementById('conclusao_curso').addEventListener('change', function() {
+    const campos = document.getElementById('campos_conclusao');
+    campos.style.display = this.checked ? 'block' : 'none';
+    
+    // Se desmarcar, limpar os campos de conclusão
+    if (!this.checked) {
+        document.getElementById('data_conclusao').value = '';
+        document.getElementById('amparo_conclusao_id').value = '';
+        document.getElementById('numero_certificado').value = '';
+        document.getElementById('livro_registro').value = '';
+        document.getElementById('folha_registro').value = '';
+    }
+});
+
+// Marcar resultado automaticamente com base na nota final
+function verificarResultado(disciplinaId) {
+    const notaFinal = parseFloat(document.getElementById(`nota_${disciplinaId}`).value) || 0;
+    const notaInput = document.getElementById(`nota_${disciplinaId}`);
+    
+    // Verificar se tem nota lançada
+    if (notaFinal > 0) {
+        // Pegar média mínima
+        const mediaMinima = parseFloat(document.getElementById('media_minima').value) || 6.0;
+        
+        // Marcar resultado automaticamente
+        const resultadoSelect = document.getElementById(`resultado_${disciplinaId}`);
+        
+        if (notaFinal >= mediaMinima) {
+            resultadoSelect.value = 'A';
+            notaInput.classList.remove('bg-danger', 'text-white', 'border-danger');
+            notaInput.classList.add('bg-success', 'text-white', 'border-success');
+        } else {
+            resultadoSelect.value = 'R';
+            notaInput.classList.remove('bg-success', 'text-white', 'border-success');
+            notaInput.classList.add('bg-danger', 'text-white', 'border-danger');
+        }
+    } else {
+        // Limpar cores se não tem nota
+        notaInput.classList.remove('bg-success', 'bg-danger', 'text-white', 'border-success', 'border-danger');
+    }
+}
+
+// Aplicar evento a todas as notas
+document.querySelectorAll('.nota-input').forEach(input => {
+    input.addEventListener('input', function() {
+        const disciplinaId = this.dataset.disciplina;
+        verificarResultado(disciplinaId);
+    });
+});
+
+// Recalcular quando média mínima mudar
+document.getElementById('media_minima').addEventListener('input', function() {
+    document.querySelectorAll('.nota-input').forEach(input => {
+        const disciplinaId = input.dataset.disciplina;
+        verificarResultado(disciplinaId);
+    });
+});
+
+// Calcular frequência automaticamente
+function calcularFrequencia(disciplinaId) {
+    const ch = parseFloat(document.querySelector(`input[name="carga_horaria_${disciplinaId}"]`).value) || 0;
+    const faltas = parseFloat(document.querySelector(`input[name="faltas_${disciplinaId}"]`).value) || 0;
+    
+    if (ch > 0) {
+        const presencas = ch - faltas;
+        const freq = ((presencas / ch) * 100).toFixed(1);
+        const freqInput = document.getElementById(`freq_${disciplinaId}`);
+        freqInput.value = freq + '%';
+        
+        // Colorir se frequência abaixo de 75%
+        if (parseFloat(freq) < 75) {
+            freqInput.classList.add('bg-warning', 'text-dark', 'fw-bold');
+            
+            // Se frequência < 75%, marcar como R (Reprovado por Frequência)
+            const resultadoSelect = document.getElementById(`resultado_${disciplinaId}`);
+            if (resultadoSelect.value === 'A') {
+                resultadoSelect.value = 'R';
+            }
+        } else {
+            freqInput.classList.remove('bg-warning', 'text-dark', 'fw-bold');
+        }
+    }
+}
+
+document.querySelectorAll('.ch-input, .faltas-input').forEach(input => {
+    input.addEventListener('input', function() {
+        const disciplinaId = this.dataset.disciplina;
+        calcularFrequencia(disciplinaId);
+    });
+});
+
+// Calcular frequência inicial ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.ch-input').forEach(input => {
+        const disciplinaId = input.dataset.disciplina;
+        calcularFrequencia(disciplinaId);
+    });
+});
+</script>
+{% endblock %}

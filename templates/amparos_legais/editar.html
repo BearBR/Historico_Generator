@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Amparo Legal - Histórico Generator{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil"></i> Editar Amparo Legal</h2>
+        <a href="{{ url_for('amparos_legais.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="tipo" class="form-label">Tipo *</label>
+                        <select class="form-select" id="tipo" name="tipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="Lei" {% if amparo.tipo == 'Lei' %}selected{% endif %}>Lei</option>
+                            <option value="Decreto" {% if amparo.tipo == 'Decreto' %}selected{% endif %}>Decreto</option>
+                            <option value="Decreto-Lei" {% if amparo.tipo == 'Decreto-Lei' %}selected{% endif %}>Decreto-Lei</option>
+                            <option value="Resolução" {% if amparo.tipo == 'Resolução' %}selected{% endif %}>Resolução</option>
+                            <option value="Parecer" {% if amparo.tipo == 'Parecer' %}selected{% endif %}>Parecer</option>
+                            <option value="Deliberação" {% if amparo.tipo == 'Deliberação' %}selected{% endif %}>Deliberação</option>
+                            <option value="Portaria" {% if amparo.tipo == 'Portaria' %}selected{% endif %}>Portaria</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="numero" class="form-label">Número *</label>
+                        <input type="text" class="form-control" id="numero" name="numero" required
+                               value="{{ amparo.numero }}" placeholder="Ex: 9394/96">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="data" class="form-label">Data</label>
+                        <input type="date" class="form-control" id="data" name="data"
+                               value="{{ amparo.data }}">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descricao" class="form-label">Descrição *</label>
+                    <textarea class="form-control" id="descricao" name="descricao" rows="3" required
+                              placeholder="Ex: Lei de Diretrizes e Bases da Educação Nacional">{{ amparo.descricao }}</textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="ano_inicio" class="form-label">Ano Início *</label>
+                        <input type="number" class="form-control" id="ano_inicio" name="ano_inicio" 
+                               min="1960" max="2025" required value="{{ amparo.ano_inicio }}">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="ano_fim" class="form-label">Ano Fim</label>
+                        <input type="number" class="form-control" id="ano_fim" name="ano_fim" 
+                               min="1960" max="2025" value="{{ amparo.ano_fim or '' }}">
+                        <small class="form-text text-muted">Deixe vazio se o amparo ainda está vigente</small>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{{ url_for('amparos_legais.listar') }}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Atualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

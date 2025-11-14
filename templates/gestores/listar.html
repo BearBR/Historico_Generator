@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Gestores - Sistema de Históricos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-person-badge"></i> Gestores
+    </h1>
+    <a href="{{ url_for('gestores.cadastrar') }}" class="btn btn-warning">
+        <i class="bi bi-plus-circle"></i> Novo Gestor
+    </a>
+</div>
+
+{% if gestores %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Cargo</th>
+                        <th>Escola</th>
+                        <th>Data Início</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for gestor in gestores %}
+                    <tr>
+                        <td>{{ gestor.nome }}</td>
+                        <td>{{ gestor.cargo }}</td>
+                        <td>{{ gestor.escola.nome }}</td>
+                        <td>{{ gestor.data_inicio.strftime('%d/%m/%Y') if gestor.data_inicio else '-' }}</td>
+                        <td>
+                            {% if gestor.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nenhum gestor cadastrado.
+    <a href="{{ url_for('gestores.cadastrar') }}">Cadastre o primeiro gestor</a>.
+</div>
+{% endif %}
+{% endblock %}

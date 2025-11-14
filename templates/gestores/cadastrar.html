@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastrar Gestor{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-person-badge"></i> Cadastrar Novo Gestor</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="POST">
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Dados do Gestor</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="escola_id" class="form-label">Escola *</label>
+                    <select class="form-select" id="escola_id" name="escola_id" required>
+                        <option value="">Selecione uma escola...</option>
+                        {% for escola in escolas %}
+                        <option value="{{ escola.id }}">{{ escola.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="nome" class="form-label">Nome Completo *</label>
+                    <input type="text" class="form-control" id="nome" name="nome" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="cargo" class="form-label">Cargo *</label>
+                    <select class="form-select" id="cargo" name="cargo" required>
+                        <option value="">Selecione...</option>
+                        <option value="Diretor">Diretor</option>
+                        <option value="Vice-Diretor">Vice-Diretor</option>
+                        <option value="Secretário">Secretário</option>
+                        <option value="Coordenador Pedagógico">Coordenador Pedagógico</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="data_inicio" class="form-label">Data de Início *</label>
+                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="data_fim" class="form-label">Data de Término</label>
+                    <input type="date" class="form-control" id="data_fim" name="data_fim">
+                    <small class="form-text text-muted">Deixe em branco se ainda estiver ativo</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('gestores.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-warning">
+            <i class="bi bi-save"></i> Salvar Gestor
+        </button>
+    </div>
+</form>
+{% endblock %}

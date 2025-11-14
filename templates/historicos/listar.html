@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Históricos - Sistema de Históricos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-file-earmark-text"></i> Históricos
+    </h1>
+    <a href="{{ url_for('historicos.novo') }}" class="btn btn-info">
+        <i class="bi bi-file-earmark-plus"></i> Novo Histórico
+    </a>
+</div>
+
+{% if historicos %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Aluno</th>
+                        <th>Escola</th>
+                        <th>Ano</th>
+                        <th>Série</th>
+                        <th>Modalidade</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for historico in historicos %}
+                    <tr>
+                        <td>{{ historico.aluno.nome_completo }}</td>
+                        <td>{{ historico.escola.nome }}</td>
+                        <td>{{ historico.ano }}</td>
+                        <td>{{ historico.serie }}</td>
+                        <td>{{ historico.modalidade.nome }}</td>
+                        <td>
+                            <a href="{{ url_for('historicos.visualizar', id=historico.id) }}" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('historicos.gerar_pdf', id=historico.id) }}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-file-pdf"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nenhum histórico cadastrado.
+    <a href="{{ url_for('historicos.novo') }}">Crie o primeiro histórico</a>.
+</div>
+{% endif %}
+{% endblock %}

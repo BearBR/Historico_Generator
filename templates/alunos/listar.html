@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Alunos - Sistema de Históricos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-people"></i> Alunos
+    </h1>
+    <a href="{{ url_for('alunos.cadastrar') }}" class="btn btn-success">
+        <i class="bi bi-person-plus"></i> Novo Aluno
+    </a>
+</div>
+
+{% if alunos %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>CPF</th>
+                        <th>Data de Nascimento</th>
+                        <th>Município</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for aluno in alunos %}
+                    <tr>
+                        <td>{{ aluno.nome_completo }}</td>
+                        <td>{{ aluno.cpf or '-' }}</td>
+                        <td>{{ aluno.data_nascimento.strftime('%d/%m/%Y') if aluno.data_nascimento else '-' }}</td>
+                        <td>{{ aluno.municipio or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('alunos.editar', id=aluno.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('alunos.deletar', id=aluno.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        onclick="return confirm('Deseja realmente desativar este aluno?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nenhum aluno cadastrado.
+    <a href="{{ url_for('alunos.cadastrar') }}">Cadastre o primeiro aluno</a>.
+</div>
+{% endif %}
+{% endblock %}

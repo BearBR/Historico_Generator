@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Amparos Legais - Histórico Generator{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-text"></i> Amparos Legais</h2>
+        <a href="{{ url_for('amparos_legais.cadastrar') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Novo Amparo Legal
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if amparos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Número</th>
+                                <th>Descrição</th>
+                                <th>Período</th>
+                                <th width="150">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for amparo in amparos %}
+                            <tr>
+                                <td><span class="badge bg-info">{{ amparo.tipo }}</span></td>
+                                <td><strong>{{ amparo.numero }}</strong></td>
+                                <td>{{ amparo.descricao }}</td>
+                                <td>
+                                    {{ amparo.ano_inicio }} - {{ amparo.ano_fim or 'atual' }}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('amparos_legais.editar', id=amparo.id) }}" 
+                                           class="btn btn-outline-primary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="confirmarExclusao({{ amparo.id }})" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Nenhum amparo legal cadastrado.
+                    <a href="{{ url_for('amparos_legais.cadastrar') }}">Cadastre o primeiro</a>.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="modalExcluir" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir este amparo legal?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formExcluir" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarExclusao(id) {
+    const modal = new bootstrap.Modal(document.getElementById('modalExcluir'));
+    document.getElementById('formExcluir').action = `/amparos-legais/${id}/excluir`;
+    modal.show();
+}
+</script>
+{% endblock %}

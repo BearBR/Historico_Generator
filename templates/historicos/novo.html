@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Histórico{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-file-earmark-plus"></i> Criar Novo Histórico</h2>
+        <hr>
+    </div>
+</div>
+
+<form method="POST">
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Informações do Histórico</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-primary">
+                <i class="bi bi-info-circle"></i> <strong>Passo 1:</strong> Escolha primeiro o <strong>Nível</strong> (Fundamental/Médio/Supletivo/EJA) para carregar as opções corretas.
+            </div>
+            
+            <div class="row">
+                <!-- PASSO 1: NÍVEL -->
+                <div class="col-md-12 mb-4">
+                    <label for="nivel" class="form-label fs-5 text-primary">
+                        <i class="bi bi-1-circle-fill"></i> Nível de Ensino *
+                    </label>
+                    <select class="form-select form-select-lg" id="nivel" name="nivel" required>
+                        <option value="">Escolha o nível de ensino...</option>
+                        <option value="Fundamental">Ensino Fundamental</option>
+                        <option value="Médio">Ensino Médio</option>
+                        <option value="Supletivo Fundamental">Supletivo - Ensino Fundamental</option>
+                        <option value="Supletivo Médio">Supletivo - Ensino Médio</option>
+                        <option value="EJA Fundamental">EJA - Ensino Fundamental</option>
+                        <option value="EJA Médio">EJA - Ensino Médio</option>
+                    </select>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div id="camposAdicionais" style="display: none;">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="aluno_id" class="form-label">Aluno *</label>
+                        <select class="form-select" id="aluno_id" name="aluno_id" required>
+                            <option value="">Selecione um aluno...</option>
+                            {% for aluno in alunos %}
+                            <option value="{{ aluno.id }}">{{ aluno.nome_completo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="escola_id" class="form-label">Escola *</label>
+                        <select class="form-select" id="escola_id" name="escola_id" required>
+                            <option value="">Selecione uma escola...</option>
+                            {% for escola in escolas %}
+                            <option value="{{ escola.id }}">{{ escola.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="ano" class="form-label">Ano Letivo *</label>
+                        <input type="number" class="form-control" id="ano" name="ano" min="1960" max="2003" required>
+                        <small class="text-muted">Entre 1960 e 2003</small>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="serie" class="form-label">Série *</label>
+                        <select class="form-select" id="serie" name="serie" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="modalidade_id" class="form-label">Modalidade *</label>
+                        <select class="form-select" id="modalidade_id" name="modalidade_id" required>
+                            <option value="">Aguarde...</option>
+                            {% for modalidade in modalidades %}
+                            <option value="{{ modalidade.id }}">{{ modalidade.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="data_inicio" class="form-label">Data de Início</label>
+                        <input type="date" class="form-control" id="data_inicio" name="data_inicio">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="data_termino" class="form-label">Data de Término</label>
+                        <input type="date" class="form-control" id="data_termino" name="data_termino">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seleção de Disciplinas -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-book"></i> Selecionar Disciplinas</h5>
+                <button type="button" class="btn btn-sm btn-light" id="btnCarregarDisciplinas">
+                    <i class="bi bi-arrow-clockwise"></i> Carregar Grade Automática
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                <i class="bi bi-info-circle"></i> Selecione as disciplinas que farão parte deste histórico.
+            </p>
+            
+            <!-- Barra de Busca -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="buscarDisciplina" 
+                               placeholder="Buscar disciplina por nome (ex: Matemática, Port, Hist...)">
+                        <button class="btn btn-outline-secondary" type="button" id="btnLimparBusca">
+                            <i class="bi bi-x-circle"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="filtroAno">
+                        <option value="">Filtrar por Ano...</option>
+                        <option value="1960-1971">1960-1971 (LDB 4024/61)</option>
+                        <option value="1971-1996">1971-1996 (LDB 5692/71)</option>
+                        <option value="1996-2003">1996-2003 (LDB 9394/96)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="listaDisciplinas">
+                <div class="alert alert-info">
+                    <i class="bi bi-lightbulb"></i> <strong>Opções:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Preencha Ano, Modalidade e Nível e clique em <strong>"Carregar Grade Automática"</strong></li>
+                        <li>Ou use a busca acima para encontrar disciplinas por nome</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Escola de Origem (Transferência) -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Escola de Origem (Apenas se for transferência)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label for="escola_origem" class="form-label">Nome da Escola de Origem</label>
+                    <input type="text" class="form-control" id="escola_origem" name="escola_origem">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="municipio_origem" class="form-label">Município</label>
+                    <input type="text" class="form-control" id="municipio_origem" name="municipio_origem">
+                </div>
+                
+                <div class="col-md-1 mb-3">
+                    <label for="uf_origem" class="form-label">UF</label>
+                    <input type="text" class="form-control" id="uf_origem" name="uf_origem" maxlength="2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Observações</h5>
+        </div>
+        <div class="card-body">
+            <textarea class="form-control" id="observacoes" name="observacoes" rows="3" 
+                      placeholder="Informações adicionais sobre o histórico..."></textarea>
+        </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('historicos.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-info">
+            <i class="bi bi-save"></i> Criar Histórico
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let todasDisciplinas = [];
+
+// PASSO 1: Ao selecionar o NÍVEL, ajustar série e modalidade
+document.getElementById('nivel').addEventListener('change', function() {
+    const nivel = this.value;
+    const serieSelect = document.getElementById('serie');
+    const modalidadeSelect = document.getElementById('modalidade_id');
+    const camposAdicionais = document.getElementById('camposAdicionais');
+    
+    // Limpar série
+    serieSelect.innerHTML = '<option value="">Selecione...</option>';
+    
+    if (!nivel) {
+        camposAdicionais.style.display = 'none';
+        return;
+    }
+    
+    // Mostrar campos adicionais
+    camposAdicionais.style.display = 'block';
+    
+    // Preencher séries baseado no nível
+    let series = [];
+    
+    if (nivel === 'Fundamental' || nivel === 'Supletivo Fundamental' || nivel === 'EJA Fundamental') {
+        series = [
+            '1ª Série', '2ª Série', '3ª Série', '4ª Série',
+            '5ª Série', '6ª Série', '7ª Série', '8ª Série'
+        ];
+    } else if (nivel === 'Médio' || nivel === 'Supletivo Médio' || nivel === 'EJA Médio') {
+        series = ['1º Ano', '2º Ano', '3º Ano'];
+    }
+    
+    series.forEach(serie => {
+        const option = document.createElement('option');
+        option.value = serie;
+        option.textContent = serie;
+        serieSelect.appendChild(option);
+    });
+    
+    // Ajustar modalidade baseado no nível
+    const modalidades = modalidadeSelect.querySelectorAll('option');
+    modalidades.forEach(opt => {
+        if (opt.value === '') return;
+        
+        const modalidadeNome = opt.textContent;
+        
+        // Filtrar modalidades baseado no nível
+        if (nivel.includes('Supletivo')) {
+            opt.style.display = modalidadeNome === 'Supletivo' ? 'block' : 'none';
+            if (modalidadeNome === 'Supletivo') {
+                opt.selected = true;
+            }
+        } else if (nivel.includes('EJA')) {
+            opt.style.display = modalidadeNome === 'EJA' ? 'block' : 'none';
+            if (modalidadeNome === 'EJA') {
+                opt.selected = true;
+            }
+        } else {
+            opt.style.display = modalidadeNome === 'Regular' ? 'block' : 'none';
+            if (modalidadeNome === 'Regular') {
+                opt.selected = true;
+            }
+        }
+    });
+});
+
+// Carregar grade automática por ano/modalidade/nível
+document.getElementById('btnCarregarDisciplinas').addEventListener('click', function() {
+    const ano = document.getElementById('ano').value;
+    const modalidadeSelect = document.getElementById('modalidade_id');
+    const nivelOriginal = document.getElementById('nivel').value;
+    
+    if (!nivelOriginal) {
+        alert('Por favor, escolha primeiro o Nível de Ensino (Passo 1)');
+        document.getElementById('nivel').focus();
+        return;
+    }
+    
+    if (!ano) {
+        alert('Por favor, preencha o Ano Letivo');
+        return;
+    }
+    
+    if (!modalidadeSelect.value) {
+        alert('Por favor, selecione a Modalidade');
+        return;
+    }
+    
+    const modalidade = modalidadeSelect.options[modalidadeSelect.selectedIndex].text;
+    
+    // Extrair apenas "Fundamental" ou "Médio" do nível completo
+    let nivel = nivelOriginal.includes('Fundamental') ? 'Fundamental' : 'Médio';
+    
+    carregarDisciplinas(`/disciplinas/api/carregar-grade?ano=${ano}&modalidade=${modalidade}&nivel=${nivel}`);
+});
+
+// Buscar disciplina por nome
+document.getElementById('buscarDisciplina').addEventListener('input', function() {
+    const termo = this.value.toLowerCase().trim();
+    
+    if (termo.length >= 2) {
+        const disciplinasFiltradas = todasDisciplinas.filter(d => 
+            d.nome.toLowerCase().includes(termo) || 
+            (d.codigo && d.codigo.toLowerCase().includes(termo))
+        );
+        exibirDisciplinas(disciplinasFiltradas);
+    } else if (termo.length === 0) {
+        exibirDisciplinas(todasDisciplinas);
+    }
+});
+
+// Filtro por período
+document.getElementById('filtroAno').addEventListener('change', function() {
+    const periodo = this.value;
+    
+    if (!periodo) {
+        exibirDisciplinas(todasDisciplinas);
+        return;
+    }
+    
+    const [anoInicio, anoFim] = periodo.split('-').map(Number);
+    const disciplinasFiltradas = todasDisciplinas.filter(d => {
+        if (!d.ano_inicio) return false;
+        
+        if (anoFim) {
+            return d.ano_inicio >= anoInicio && d.ano_inicio <= anoFim;
+        } else {
+            return d.ano_inicio >= anoInicio;
+        }
+    });
+    
+    exibirDisciplinas(disciplinasFiltradas);
+});
+
+// Limpar busca
+document.getElementById('btnLimparBusca').addEventListener('click', function() {
+    document.getElementById('buscarDisciplina').value = '';
+    document.getElementById('filtroAno').value = '';
+    exibirDisciplinas(todasDisciplinas);
+});
+
+function carregarDisciplinas(url) {
+    const container = document.getElementById('listaDisciplinas');
+    container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-2">Carregando disciplinas...</p></div>';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.disciplinas && data.disciplinas.length > 0) {
+                todasDisciplinas = data.disciplinas;
+                exibirDisciplinas(data.disciplinas);
+            } else {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Nenhuma disciplina encontrada.
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> Erro ao carregar disciplinas: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function exibirDisciplinas(disciplinas) {
+    const container = document.getElementById('listaDisciplinas');
+    
+    if (disciplinas.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> Nenhuma disciplina encontrada com os filtros aplicados.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row g-2">';
+    
+    disciplinas.forEach(disc => {
+        html += `
+            <div class="col-md-6 col-lg-4">
+                <div class="form-check p-3 border rounded hover-shadow">
+                    <input class="form-check-input" type="checkbox" 
+                           name="disciplinas_selecionadas[]" 
+                           value="${disc.id}" 
+                           id="disc_${disc.id}">
+                    <label class="form-check-label w-100" for="disc_${disc.id}">
+                        <strong>${disc.nome}</strong>
+                        ${disc.codigo ? `<span class="badge bg-secondary ms-1">${disc.codigo}</span>` : ''}
+                        <br><small class="text-muted">
+                            ${disc.carga_horaria_padrao ? `CH: ${disc.carga_horaria_padrao}h` : ''}
+                            ${disc.serie ? ` • ${disc.serie}` : ''}
+                        </small>
+                    </label>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    html += `
+        <div class="mt-3 p-3 bg-light rounded">
+            <button type="button" class="btn btn-sm btn-primary" onclick="selecionarTodas()">
+                <i class="bi bi-check-all"></i> Selecionar Todas
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="desmarcarTodas()">
+                <i class="bi bi-x-circle"></i> Desmarcar Todas
+            </button>
+            <span class="ms-3 text-muted">
+                <i class="bi bi-info-circle"></i> 
+                <strong id="total-selecionadas">0</strong> de ${disciplinas.length} disciplinas selecionadas
+            </span>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // Adicionar contador
+    document.querySelectorAll('input[name="disciplinas_selecionadas[]"]').forEach(checkbox => {
+        checkbox.addEventListener('change', atualizarContador);
+    });
+}
+
+function selecionarTodas() {
+    document.querySelectorAll('input[name="disciplinas_selecionadas[]"]').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    atualizarContador();
+}
+
+function desmarcarTodas() {
+    document.querySelectorAll('input[name="disciplinas_selecionadas[]"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    atualizarContador();
+}
+
+function atualizarContador() {
+    const total = document.querySelectorAll('input[name="disciplinas_selecionadas[]"]:checked').length;
+    document.getElementById('total-selecionadas').textContent = total;
+}
+</script>
+
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

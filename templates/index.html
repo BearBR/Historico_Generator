@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Históricos Escolares{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-2">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </h1>
+        <p class="text-muted">Sistema de Gerenciamento de Históricos Escolares - Rio Grande do Sul (1960-2003)</p>
+    </div>
+</div>
+
+<!-- Estatísticas Principais -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-left-primary shadow h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Escolas</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_escolas }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-building fs-2 text-primary"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('escolas.listar') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-eye"></i> Ver Escolas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-left-success shadow h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Alunos</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_alunos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fs-2 text-success"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('alunos.listar') }}" class="btn btn-outline-success btn-sm w-100">
+                        <i class="bi bi-eye"></i> Ver Alunos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-left-info shadow h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Históricos</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_historicos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-earmark-text fs-2 text-info"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('historicos.listar') }}" class="btn btn-outline-info btn-sm w-100">
+                        <i class="bi bi-eye"></i> Ver Históricos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-left-warning shadow h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Gestores</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_gestores }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-person-badge fs-2 text-warning"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('gestores.listar') }}" class="btn btn-outline-warning btn-sm w-100">
+                        <i class="bi bi-eye"></i> Ver Gestores
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acesso Rápido -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning-fill"></i> Acesso Rápido</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('historicos.novo') }}" class="btn btn-lg btn-success w-100 py-4">
+                            <i class="bi bi-file-earmark-plus fs-1 d-block mb-2"></i>
+                            <strong>Novo Histórico</strong>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('alunos.cadastrar') }}" class="btn btn-lg btn-outline-primary w-100 py-4">
+                            <i class="bi bi-person-plus fs-1 d-block mb-2"></i>
+                            Cadastrar Aluno
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('escolas.cadastrar') }}" class="btn btn-lg btn-outline-primary w-100 py-4">
+                            <i class="bi bi-building fs-1 d-block mb-2"></i>
+                            Cadastrar Escola
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('amparos_legais.listar') }}" class="btn btn-lg btn-outline-secondary w-100 py-4">
+                            <i class="bi bi-file-earmark-law fs-1 d-block mb-2"></i>
+                            Amparos Legais
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Módulos do Sistema -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 class="mb-3"><i class="bi bi-grid-3x3-gap"></i> Módulos do Sistema</h3>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-4 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-building text-primary"></i> Gestão de Escolas
+                </h5>
+                <p class="card-text text-muted small">
+                    Cadastre escolas com dados legais, decretos de criação, reorganização e informações da CRE.
+                </p>
+                <a href="{{ url_for('escolas.listar') }}" class="btn btn-sm btn-primary">Acessar</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-people text-success"></i> Gestão de Alunos
+                </h5>
+                <p class="card-text text-muted small">
+                    Mantenha cadastro completo de alunos com dados pessoais, filiação e documentação.
+                </p>
+                <a href="{{ url_for('alunos.listar') }}" class="btn btn-sm btn-success">Acessar</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-file-earmark-text text-info"></i> Históricos Escolares
+                </h5>
+                <p class="card-text text-muted small">
+                    Crie e gerencie históricos escolares com notas, frequência e documentação completa.
+                </p>
+                <a href="{{ url_for('historicos.listar') }}" class="btn btn-sm btn-info">Acessar</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-person-badge text-warning"></i> Gestores
+                </h5>
+                <p class="card-text text-muted small">
+                    Cadastre diretores e secretários para assinatura de históricos e documentos.
+                </p>
+                <a href="{{ url_for('gestores.listar') }}" class="btn btn-sm btn-warning">Acessar</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-file-earmark-law text-secondary"></i> Amparos Legais
+                </h5>
+                <p class="card-text text-muted small">
+                    Gerencie leis, resoluções e pareceres que fundamentam os históricos escolares.
+                </p>
+                <a href="{{ url_for('amparos_legais.listar') }}" class="btn btn-sm btn-secondary">Acessar</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-book text-danger"></i> Disciplinas Históricas
+                </h5>
+                <p class="card-text text-muted small">
+                    Banco de disciplinas do RS de 1960 a 2003 por modalidade e período legislativo.
+                </p>
+                <a href="{{ url_for('disciplinas.listar') }}" class="btn btn-sm btn-danger">Acessar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informações do Sistema -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Sobre o Sistema</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Funcionalidades</h6>
+                        <ul class="small">
+                            <li>Digitalização de históricos escolares antigos (1960-2003)</li>
+                            <li>Banco de disciplinas históricas do Rio Grande do Sul</li>
+                            <li>Suporte a múltiplas modalidades (Regular, Supletivo, EJA)</li>
+                            <li>Geração automática de PDFs oficiais</li>
+                            <li>Conclusão de curso com certificação</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Dados Disponíveis</h6>
+                        <ul class="small">
+                            <li>80+ disciplinas históricas (1960-2003)</li>
+                            <li>17 amparos legais do RS e nacionais</li>
+                            <li>3 modalidades de ensino</li>
+                            <li>16 tipos de resultados finais</li>
+                            <li>Templates automáticos por ano/modalidade</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-building fs-1 text-primary"></i>
+                <h3 class="mt-3">{{ total_escolas }}</h3>
+                <p class="text-muted">Escolas Cadastradas</p>
+                <a href="{{ url_for('escolas.listar') }}" class="btn btn-outline-primary btn-sm">
+                    Ver Escolas
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-people fs-1 text-success"></i>
+                <h3 class="mt-3">{{ total_alunos }}</h3>
+                <p class="text-muted">Alunos Cadastrados</p>
+                <a href="{{ url_for('alunos.listar') }}" class="btn btn-outline-success btn-sm">
+                    Ver Alunos
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-text fs-1 text-info"></i>
+                <h3 class="mt-3">{{ total_historicos }}</h3>
+                <p class="text-muted">Históricos Gerados</p>
+                <a href="{{ url_for('historicos.listar') }}" class="btn btn-outline-info btn-sm">
+                    Ver Históricos
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-3">
+            <i class="bi bi-lightning"></i> Ações Rápidas
+        </h3>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <a href="{{ url_for('escolas.cadastrar') }}" class="btn btn-primary w-100 p-3">
+            <i class="bi bi-building"></i><br>
+            Nova Escola
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('alunos.cadastrar') }}" class="btn btn-success w-100 p-3">
+            <i class="bi bi-person-plus"></i><br>
+            Novo Aluno
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('historicos.novo') }}" class="btn btn-info w-100 p-3">
+            <i class="bi bi-file-earmark-plus"></i><br>
+            Novo Histórico
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('gestores.cadastrar') }}" class="btn btn-warning w-100 p-3">
+            <i class="bi bi-person-badge"></i><br>
+            Novo Gestor
+        </a>
+    </div>
+</div>
+
+<!-- Informações do Sistema -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Sobre o Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    Sistema de Gerenciamento de Históricos Escolares desenvolvido para 
+                    facilitar o registro e geração de históricos escolares desde 1960 até os dias atuais.
+                </p>
+                <ul>
+                    <li>Gerenciamento completo de escolas e alunos</li>
+                    <li>Registro de históricos escolares por ano e série</li>
+                    <li>Disciplinas históricas de 1960 a 2025</li>
+                    <li>Geração de PDF com históricos escolares</li>
+                    <li>Amparos legais e modalidades de ensino</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.border-left-primary { border-left: 4px solid #007bff !important; }
+.border-left-success { border-left: 4px solid #28a745 !important; }
+.border-left-info { border-left: 4px solid #17a2b8 !important; }
+.border-left-warning { border-left: 4px solid #ffc107 !important; }
+</style>
+{% endblock %}
