@@ -25,27 +25,24 @@
 
         .header-container {
             position: relative;
-            margin-bottom: 20px;
-            padding: 15px 20px;
-            border: 2px solid #003366;
-            border-radius: 8px;
-            background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border: 1px solid #000;
             display: table;
             width: 100%;
         }
 
         .logo-escola {
             display: table-cell;
-            width: 100px;
+            width: 70px;
             vertical-align: middle;
-            padding-right: 20px;
+            padding-right: 12px;
         }
 
         .logo-escola img {
-            width: 90px;
+            width: 60px;
             height: auto;
-            max-height: 90px;
+            max-height: 60px;
             object-fit: contain;
         }
 
@@ -56,53 +53,52 @@
         }
 
         .header h1 {
-            font-size: 12pt;
+            font-size: 9pt;
             font-weight: normal;
             margin: 0;
             padding: 0;
-            color: #555;
+            color: #000;
         }
 
         .header .escola-nome {
-            font-size: 15pt;
+            font-size: 11pt;
             font-weight: bold;
             margin: 0;
             padding: 0;
-            color: #003366;
+            color: #000;
             text-transform: uppercase;
         }
 
         .header .escola-info {
-            font-size: 9pt;
+            font-size: 8pt;
             margin: 0;
             padding: 0;
-            color: #333;
+            color: #000;
             line-height: 1.1;
         }
 
         .secao {
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
 
         .secao-titulo {
-            background-color: #f0f0f0;
+            background-color: #d9d9d9;
             border: 1px solid #000;
-            padding: 5px 10px;
+            padding: 4px 8px;
             font-weight: bold;
-            font-size: 12pt;
-            margin-bottom: 10px;
+            font-size: 10pt;
+            margin-bottom: 8px;
             text-align: center;
         }
 
         .ano-letivo-titulo {
-            background-color: #e3f2fd;
-            border: 1px solid #1976d2;
-            padding: 5px 10px;
+            background-color: #d9d9d9;
+            border: 1px solid #000;
+            padding: 3px 6px;
             font-weight: bold;
-            font-size: 11pt;
-            margin-top: 15px;
-            margin-bottom: 8px;
-            color: #1565c0;
+            font-size: 8pt;
+            margin-bottom: 2px;
+            text-align: center;
         }
 
         .info-item {
@@ -122,7 +118,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 2px;
             page-break-inside: auto;
         }
 
@@ -137,19 +133,19 @@
 
         th, td {
             border: 1px solid #000;
-            padding: 5px 6px;
+            padding: 1px 3px;
             text-align: left;
         }
 
         th {
-            background-color: #e0e0e0;
+            background-color: #d9d9d9;
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 7pt;
             text-align: center;
         }
 
         td {
-            font-size: 9pt;
+            font-size: 7pt;
         }
 
         .numero {
@@ -184,29 +180,31 @@
         }
 
         .conclusao {
-            margin-top: 20px;
-            padding: 15px;
-            border: 2px solid #000;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #000;
             background-color: #f5f5f5;
             page-break-inside: avoid;
             break-inside: avoid;
-            -webkit-column-break-inside: avoid;
-            -moz-page-break-inside: avoid;
-            page-break-before: always;
+            clear: both;
         }
 
-        /* Container para cada ano/serie: evitar quebra entre páginas e estilizar como cartão */
+        /* Container para cada ano/serie em layout de 2 colunas */
         .ano-container {
+            width: 49%;
+            float: left;
+            margin-bottom: 4px;
             page-break-inside: avoid;
             break-inside: avoid;
-            -webkit-column-break-inside: avoid;
-            -moz-page-break-inside: avoid;
-            padding: 10px;
-            margin-bottom: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            background-color: #ffffff;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .ano-container:nth-child(odd) {
+            margin-right: 2%;
+        }
+
+        /* Força quebra de página a cada 4 anos (2 linhas de 2 colunas) */
+        .ano-container:nth-child(4n) {
+            page-break-after: always;
         }
 
         .conclusao p {
@@ -291,42 +289,28 @@
     <!-- Identificação do Aluno -->
     <div class="secao">
         <div class="secao-titulo">IDENTIFICAÇÃO DO ALUNO</div>
-        <table style="width: 100%; border: none;">
+        <table style="width: 100%; border: 1px solid #000;">
             <tr>
-                <td style="width: 50%; border: 1px solid #ccc; padding: 10px; vertical-align: top;">
-                    <div class="info-item" style="margin-bottom: 8px;">
-                        <span class="info-label">Nome Completo:</span>
-                        <span class="info-value">{{ aluno.nome_completo }}</span>
+                <td style="width: 50%; border-right: 1px solid #000; padding: 6px; vertical-align: top; font-size: 8pt;">
+                    <div style="margin-bottom: 4px;">
+                        <strong>Nome Completo:</strong> {{ aluno.nome_completo }}
                     </div>
-                    <div class="info-item" style="margin-bottom: 8px;">
-                        <span class="info-label">Data de Nascimento:</span>
-                        <span class="info-value">{{ aluno.data_nascimento.strftime('%d/%m/%Y') if aluno.data_nascimento else '-' }}</span>
+                    <div style="margin-bottom: 4px;">
+                        <strong>Data de Nascimento:</strong> {{ aluno.data_nascimento.strftime('%d/%m/%Y') if aluno.data_nascimento else '-' }}
                     </div>
-                    <div class="info-item" style="margin-bottom: 8px;">
-                        <span class="info-label">Naturalidade:</span>
-                        <span class="info-value">{{ aluno.naturalidade or '-' }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">UF:</span>
-                        <span class="info-value">{{ aluno.uf_nascimento or '-' }}</span>
+                    <div style="margin-bottom: 4px;">
+                        <strong>Naturalidade:</strong> {{ aluno.naturalidade or '-' }} / {{ aluno.uf_nascimento or '-' }}
                     </div>
                 </td>
-                <td style="width: 50%; border: 1px solid #ccc; border-left: none; padding: 10px; vertical-align: top;">
-                    <div class="info-item" style="margin-bottom: 8px;">
-                        <span class="info-label">CPF:</span>
-                        <span class="info-value">{{ aluno.cpf or '-' }}</span>
+                <td style="width: 50%; padding: 6px; vertical-align: top; font-size: 8pt;">
+                    <div style="margin-bottom: 4px;">
+                        <strong>CPF:</strong> {{ aluno.cpf or '-' }}
                     </div>
-                    <div class="info-item" style="margin-bottom: 8px;">
-                        <span class="info-label">RG:</span>
-                        <span class="info-value">{{ aluno.rg or '-' }} {{ aluno.orgao_emissor or '' }}</span>
+                    <div style="margin-bottom: 4px;">
+                        <strong>RG:</strong> {{ aluno.rg or '-' }} {{ aluno.orgao_emissor or '' }}
                     </div>
-                    <div class="info-item" style="margin-bottom: 8px;">
-                        <span class="info-label">Filiação (Mãe):</span>
-                        <span class="info-value">{{ aluno.nome_mae or '-' }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Filiação (Pai):</span>
-                        <span class="info-value">{{ aluno.nome_pai or '-' }}</span>
+                    <div style="margin-bottom: 4px;">
+                        <strong>Filiação:</strong> {{ aluno.nome_mae or '-' }}{% if aluno.nome_pai %} / {{ aluno.nome_pai }}{% endif %}
                     </div>
                 </td>
             </tr>
@@ -348,66 +332,56 @@
         {% endif %}
     </div>
 
-    <!-- Anos Letivos: cada ano em seu próprio cartão (evita quebra entre páginas) -->
+    <!-- Anos Letivos em 2 Colunas (4 anos por página) -->
     {% for ano_letivo in anos_letivos %}
-        <div class="ano-container" {% if not loop.last %}style="page-break-after: always;"{% endif %}>
-            <div class="ano-letivo-titulo" style="font-size: 10pt; padding: 6px 8px; margin-bottom: 6px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-weight: bold; color: #0d47a1;">
-                        {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
-                    </div>
-                    <div style="font-size:9pt; font-weight:normal; color: #333;">
-                        CH Total: {{ ano_letivo.carga_horaria_total or '-' }}h
-                    </div>
-                </div>
+        <div class="ano-container">
+            <div class="ano-letivo-titulo">
+                {{ ano_letivo.serie }} - {{ ano_letivo.ano }}
                 {% if ano_letivo.escola and ano_letivo.escola.nome != escola_emissora.nome %}
-                <div style="font-size: 8pt; font-weight: normal; margin-top:4px;">{{ ano_letivo.escola.nome }}</div>
+                 - {{ ano_letivo.escola.nome }}
                 {% elif ano_letivo.escola_nome_manual %}
-                <div style="font-size: 8pt; font-weight: normal; margin-top:4px;">{{ ano_letivo.escola_nome_manual }}</div>
+                 - {{ ano_letivo.escola_nome_manual }}
                 {% endif %}
             </div>
 
             <!-- Disciplinas do Ano -->
             {% if ano_letivo.disciplinas %}
-            <table style="font-size: 9pt; margin-bottom: 6px; width: 100%;">
+            <table>
                 <thead>
                     <tr>
-                        <th style="width: 60%; padding: 6px; font-size: 9pt;">Disciplina</th>
-                        <th style="width: 12%; padding: 6px; font-size: 9pt;">Nota</th>
-                        {% if historico.exibir_faltas_frequencia %}
-                        <th style="width: 14%; padding: 6px; font-size: 9pt;">Freq.</th>
-                        {% endif %}
-                        <th class="historico-res {% if historico.exibir_faltas_frequencia %}historico-res-faltas{% else %}historico-res-sem-faltas{% endif %}" style="padding: 6px; font-size: 9pt;">Res.</th>
+                        <th style="width: 52%;">Disciplina</th>
+                        <th style="width: 8%;">Série</th>
+                        <th style="width: 9%;">Aprov.</th>
+                        <th style="width: 8%;">C.H.</th>
+                        <th style="width: 8%;">R.F.</th>
+                        <th style="width: 7%;">P.E</th>
+                        <th style="width: 4%;">Obs</th>
+                        <th style="width: 4%;">Esc.</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for disc in ano_letivo.disciplinas %}
                     <tr>
-                        <td style="padding: 6px; font-size: 9pt;">{{ disc.disciplina_historica.nome }}</td>
-                        <td class="numero" style="padding: 6px; font-size: 9pt;">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
-                        {% if historico.exibir_faltas_frequencia %}
-                        <td class="numero" style="padding: 6px; font-size: 9pt;">{{ '%.0f' % disc.frequencia if disc.frequencia else '-' }}%</td>
-                        {% endif %}
-                        <td class="numero resultado-{{ disc.resultado }}" style="padding: 6px; font-size: 9pt;">{{ disc.resultado or '-' }}</td>
+                        <td>{{ disc.disciplina_historica.nome }}</td>
+                        <td class="numero">{{ ano_letivo.serie }}</td>
+                        <td class="numero">{{ disc.resultado or '-' }}</td>
+                        <td class="numero">{{ disc.carga_horaria or '-' }}</td>
+                        <td class="numero">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
+                        <td class="numero">{{ ano_letivo.ano }}</td>
+                        <td class="numero"></td>
+                        <td class="numero"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-            {% endif %}
-
-            <!-- Resultado Final do Ano -->
-            {% if ano_letivo.resultado_final %}
-            <div class="totais-ano" style="font-size: 9pt; padding: 6px 8px; margin-bottom: 4px;">
-                <strong>Resultado:</strong> {{ ano_letivo.resultado_final.codigo }}
-            </div>
             {% endif %}
         </div>
     {% endfor %}
     <div style="clear: both;"></div>
 
     <!-- Legenda -->
-    <p style="font-size: 9pt; margin-top: 10px; margin-bottom: 15px;">
-        <strong>Legenda:</strong> A = Aprovado | R = Reprovado | T = Transferido | EV = Evadido | D = Desistente | P = Pendente
+    <p style="font-size: 7pt; margin-top: 6px; margin-bottom: 6px;">
+        <strong>Legenda:</strong> A = Aprovado | R = Reprovado | T = Transferido | EV = Evadido | D = Desistente | P = Pendente | Parec = Parecer
     </p>
 
     <!-- Observações -->
