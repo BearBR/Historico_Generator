@@ -98,7 +98,9 @@
             font-weight: bold;
             font-size: 8pt;
             margin-bottom: 2px;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .info-item {
@@ -336,12 +338,8 @@
     {% for ano_letivo in anos_letivos %}
         <div class="ano-container">
             <div class="ano-letivo-titulo">
-                {{ ano_letivo.serie }} - {{ ano_letivo.ano }}
-                {% if ano_letivo.escola and ano_letivo.escola.nome != escola_emissora.nome %}
-                 - {{ ano_letivo.escola.nome }}
-                {% elif ano_letivo.escola_nome_manual %}
-                 - {{ ano_letivo.escola_nome_manual }}
-                {% endif %}
+                <div style="font-weight: normal; font-size:8pt;">{{ ano_letivo.serie }} - {{ ano_letivo.ano }}{% if ano_letivo.escola and ano_letivo.escola.nome != escola_emissora.nome %} - {{ ano_letivo.escola.nome }}{% elif ano_letivo.escola_nome_manual %} - {{ ano_letivo.escola_nome_manual }}{% endif %}</div>
+                <div style="font-size:7pt; font-weight: normal;">CH Total: {{ ano_letivo.carga_horaria_total or '-' }}h</div>
             </div>
 
             <!-- Disciplinas do Ano -->
@@ -349,23 +347,19 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 52%;">Disciplina</th>
-                        <th style="width: 8%;">Série</th>
-                        <th style="width: 9%;">Aprov.</th>
-                        <th style="width: 8%;">C.H.</th>
-                        <th style="width: 8%;">R.F.</th>
-                        <th style="width: 7%;">P.E</th>
-                        <th style="width: 4%;">Obs</th>
-                        <th style="width: 4%;">Esc.</th>
+                        <th style="width: 60%;">Disciplina</th>
+                        <th style="width: 12%;">Aprov.</th>
+                        <th style="width: 12%;">R.F.</th>
+                        <th style="width: 8%;">P.E</th>
+                        <th style="width: 8%;">Obs</th>
+                        <th style="width: 8%;">Esc.</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for disc in ano_letivo.disciplinas %}
                     <tr>
                         <td>{{ disc.disciplina_historica.nome }}</td>
-                        <td class="numero">{{ ano_letivo.serie }}</td>
                         <td class="numero">{{ disc.resultado or '-' }}</td>
-                        <td class="numero">{{ disc.carga_horaria or '-' }}</td>
                         <td class="numero">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
                         <td class="numero">{{ ano_letivo.ano }}</td>
                         <td class="numero"></td>
