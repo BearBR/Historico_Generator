@@ -348,11 +348,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 64%;">Disciplina</th>
+                        <th style="width: 76%;">Disciplina</th>
                         <th style="width: 12%;">Resultado</th>
                         <th style="width: 12%;">R.F.</th>
-                        <th style="width: 6%;">Obs</th>
-                        <th style="width: 6%;">Esc.</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -361,14 +359,15 @@
                         <td>{{ disc.disciplina_historica.nome }}</td>
                         <td class="numero">{{ disc.resultado or '-' }}</td>
                         <td class="numero">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
-                        <td class="numero"></td>
-                        <td class="numero"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             {% endif %}
         </div>
+        {% if loop.index0 % 2 == 1 %}
+        <div style="clear: both; height: 12px;"></div>
+        {% endif %}
     {% endfor %}
     <div style="clear: both;"></div>
 
