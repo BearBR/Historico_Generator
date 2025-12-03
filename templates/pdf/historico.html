@@ -332,17 +332,19 @@
         {% set is_par = loop.index0 % 2 == 1 %}
         <div class="historico-coluna {% if not is_par %}historico-coluna-par{% endif %}">
             <div class="ano-letivo-titulo" style="font-size: 9pt; padding: 2px 4px; margin-bottom: 2px;">
-                {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
+                    </div>
+                    <div style="font-size:8pt; font-weight:normal;">
+                        CH Total: {{ ano_letivo.carga_horaria_total or '-' }}h
+                    </div>
+                </div>
                 {% if ano_letivo.escola and ano_letivo.escola.nome != escola_emissora.nome %}
                 <br><span style="font-size: 7pt; font-weight: normal;">{{ ano_letivo.escola.nome }}</span>
                 {% elif ano_letivo.escola_nome_manual %}
                 <br><span style="font-size: 7pt; font-weight: normal;">{{ ano_letivo.escola_nome_manual }}</span>
                 {% endif %}
-            </div>
-
-            <!-- Informações do Ano -->
-            <div style="font-size: 7pt; padding: 1px 3px; background-color: #f9f9f9; border: 1px solid #ddd; margin-bottom: 2px;">
-                <strong>Ano:</strong> {{ ano_letivo.ano }} | <strong>Dias:</strong> {{ ano_letivo.dias_letivos or '-' }} | <strong>CH:</strong> {{ ano_letivo.carga_horaria_total or '-' }}h
             </div>
 
             <!-- Disciplinas do Ano -->
