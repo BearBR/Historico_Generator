@@ -305,7 +305,12 @@
                         <strong>Data de Nascimento:</strong> {{ aluno.data_nascimento.strftime('%d/%m/%Y') if aluno.data_nascimento else '-' }}
                     </div>
                     <div style="margin-bottom: 4px;">
-                        <strong>Naturalidade:</strong> {{ aluno.naturalidade or '-' }} / {{ aluno.uf_nascimento or '-' }}
+                        <strong>Naturalidade:</strong>
+                        {% if aluno.naturalidade %}
+                            {{ aluno.naturalidade }}{% if aluno.uf_nascimento %} / {{ aluno.uf_nascimento }}{% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
                     </div>
                 </td>
                 <td style="width: 50%; padding: 6px; vertical-align: top; font-size: 8pt;">
