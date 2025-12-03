@@ -315,11 +315,12 @@
 
     <!-- Título do Histórico -->
     <div class="secao">
+        {% set nivel_base = historico.nivel.split(' ')[0] if historico.nivel else '' %}
         <div class="secao-titulo">
             {% if historico.conclusao_curso %}
-                CERTIFICADO DE CONCLUSÃO DE ENSINO {{ historico.nivel|upper }}
+                CERTIFICADO DE CONCLUSÃO DE ENSINO {{ nivel_base|upper }}
             {% else %}
-                HISTÓRICO ESCOLAR COMPLETO - ENSINO {{ historico.nivel|upper }}
+                HISTÓRICO ESCOLAR COMPLETO - ENSINO {{ nivel_base|upper }}
             {% endif %}
         </div>
         {% if modalidade %}
