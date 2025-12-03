@@ -187,7 +187,7 @@
 
         .conclusao {
             margin-top: 10px;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #000;
             background-color: #f5f5f5;
             page-break-inside: avoid;
@@ -216,6 +216,18 @@
         .conclusao p {
             margin: 5px 0;
             text-align: justify;
+        }
+
+        /* When the section title is inside the conclusion box, remove its own border
+           so it does not clash with the conclusion box border and shift content down. */
+        .conclusao > .secao-titulo {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0 0 8px 0;
+            font-size: 10pt;
+            font-weight: bold;
+            text-align: center;
         }
 
         .rodape {
