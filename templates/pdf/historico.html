@@ -350,12 +350,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 60%;">Disciplina</th>
+                        <th style="width: 64%;">Disciplina</th>
                         <th style="width: 12%;">Aprov.</th>
                         <th style="width: 12%;">R.F.</th>
-                        <th style="width: 8%;">P.E</th>
-                        <th style="width: 8%;">Obs</th>
-                        <th style="width: 8%;">Esc.</th>
+                        <th style="width: 6%;">Obs</th>
+                        <th style="width: 6%;">Esc.</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -364,7 +363,6 @@
                         <td>{{ disc.disciplina_historica.nome }}</td>
                         <td class="numero">{{ disc.resultado or '-' }}</td>
                         <td class="numero">{{ '%.1f' % disc.nota_final if disc.nota_final else '-' }}</td>
-                        <td class="numero">{{ ano_letivo.ano }}</td>
                         <td class="numero"></td>
                         <td class="numero"></td>
                     </tr>
