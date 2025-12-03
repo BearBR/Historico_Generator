@@ -193,6 +193,7 @@
             page-break-inside: avoid;
             break-inside: avoid;
             clear: both;
+            page-break-before: always;
         }
 
         /* Container para cada ano/serie em layout de 2 colunas */
@@ -389,6 +390,24 @@
     {% endfor %}
     <div style="clear: both;"></div>
 
+    <!-- Assinaturas -->
+    <div style="margin-top: 24px; margin-bottom: 8px;">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="width: 50%; border: 1px solid #ccc; padding: 12px 10px; text-align: center; vertical-align: bottom;">
+                    <div style="font-size: 10pt; margin-bottom: 50px; line-height: 1.4;">{{ historico.nome_secretario or '&nbsp;' }}</div>
+                    <hr style="border: none; border-top: 2px solid #000; width: 80%; margin: 0 auto 6px auto;">
+                    <div style="font-size: 8pt; color: #555;">Secretário(a) Escolar</div>
+                </td>
+                <td style="width: 50%; border: 1px solid #ccc; border-left: none; padding: 12px 10px; text-align: center; vertical-align: bottom;">
+                    <div style="font-size: 10pt; margin-bottom: 50px; line-height: 1.4;">{{ historico.nome_diretor or '&nbsp;' }}</div>
+                    <hr style="border: none; border-top: 2px solid #000; width: 80%; margin: 0 auto 6px auto;">
+                    <div style="font-size: 8pt; color: #555;">Diretor(a)</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <!-- Legenda -->
     <p style="font-size: 7pt; margin-top: 6px; margin-bottom: 6px;">
         <strong>Legenda:</strong> A = Aprovado | R = Reprovado | T = Transferido | EV = Evadido | D = Desistente | P = Pendente | Parec = Parecer
@@ -447,31 +466,7 @@
     </div>
     {% endif %}
 
-    <!-- Assinaturas -->
-    <div style="margin-top: 40px;">
-        <table style="width: 100%; border: none;">
-            <tr>
-                <td style="width: 50%; border: 1px solid #ccc; padding: 20px 15px; text-align: center; vertical-align: bottom;">
-                    <div style="font-size: 10pt; margin-bottom: 70px; line-height: 1.5;">
-                        {{ historico.nome_secretario or '&nbsp;' }}
-                    </div>
-                    <hr style="border: none; border-top: 2px solid #000; width: 80%; margin: 0 auto 10px auto;">
-                    <div style="font-size: 9pt; color: #555;">
-                        Secretário(a) Escolar
-                    </div>
-                </td>
-                <td style="width: 50%; border: 1px solid #ccc; border-left: none; padding: 20px 15px; text-align: center; vertical-align: bottom;">
-                    <div style="font-size: 10pt; margin-bottom: 70px; line-height: 1.5;">
-                        {{ historico.nome_diretor or '&nbsp;' }}
-                    </div>
-                    <hr style="border: none; border-top: 2px solid #000; width: 80%; margin: 0 auto 10px auto;">
-                    <div style="font-size: 9pt; color: #555;">
-                        Diretor(a)
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
+    {# signatures moved earlier after years #}
 
     <!-- Rodapé -->
     {% if primeira_escola %}
