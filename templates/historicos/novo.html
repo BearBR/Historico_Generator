@@ -295,10 +295,12 @@ async function salvarFormularioBanco() {
 // Aguardar o DOM carregar
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado, inicializando eventos...');
+    let primeiraVezNivel = true; // Flag para controlar primeira execução
 
     // Se for edição, carregar dados do histórico
     {% if é_edicao and historico %}
-    console.log('🔄 Carregando dados do histórico para edição...');
+    console.log('🔄 Modo edição ativado');
+    console.log('📦 Dados carregados:', dadosHistorico);
     document.getElementById('nivel').value = '{{ historico.nivel }}';
     document.getElementById('aluno_id').value = '{{ historico.aluno_id }}';
     document.getElementById('modalidade_id').value = '{{ historico.modalidade_id }}';
@@ -308,6 +310,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('nivel').addEventListener('change', function() {
         const nivel = this.value;
         const modalidadeInput = document.getElementById('modalidade_id');
+        
+        console.log('Nível selecionado:', nivel);
+        console.log('É primeira vez?', primeiraVezNivel);
+        console.log('É edição?', éEdicao);
         
         console.log('Nível selecionado:', nivel);
         
@@ -355,14 +361,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Armazenar séries disponíveis globalmente
         window.seriesDisponiveis = seriesDisponiveis;
         
-        // Limpar anos anteriores (apenas se NÃO for edição ou se mudar o nível)
-        if (!éEdicao || document.getElementById('anosLetivos').children.length > 0) {
+        // Limpar anos anteriores (apenas se NÃO for primeira vez na edição)
+        if (!primeiraVezNivel || !éEdicao) {
             document.getElementById('anosLetivos').innerHTML = '';
             contadorAnos = 0;
         }
         
-        // Se for edição, carregar anos do histórico
-        if (éEdicao && dadosHistorico && dadosHistorico.anos.length > 0) {
+        // Se for edição E primeira vez, carregar anos do histórico
+        if (éEdicao && primeiraVezNivel && dadosHistorico && dadosHistorico.anos.length > 0) {
             console.log('📚 Carregando', dadosHistorico.anos.length, 'anos do histórico...');
             dadosHistorico.anos.forEach((anoData, index) => {
                 setTimeout(() => {
@@ -370,6 +376,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const ultimoAnoContainer = document.querySelectorAll('.ano-letivo-container')[index];
                     if (ultimoAnoContainer) {
                         const anoId = ultimoAnoContainer.querySelector('.ano-input').dataset.anoId;
+                        
+                        console.log(`📖 Ano ${index + 1}:`, anoData);
                         
                         // Preencher dados do ano
                         document.querySelector(`input.ano-input[data-ano-id="${anoId}"]`).value = anoData.ano;
@@ -399,9 +407,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, index * 200); // Delay entre cada ano para garantir que sejam criados em ordem
             });
+            primeiraVezNivel = false; // Marcar que já carregou
         } else if (!éEdicao) {
             // Adicionar primeiro ano automaticamente (apenas para novo histórico)
             adicionarAnoLetivo();
+        }
+        
+        // Marcar que já não é mais primeira vez
+        if (primeiraVezNivel) {
+            primeiraVezNivel = false;
         }
     });
     
