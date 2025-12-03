@@ -23,6 +23,7 @@
                         <th>Nome</th>
                         <th>Município</th>
                         <th>Telefone</th>
+                        <th>Padrão</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -33,6 +34,17 @@
                         <td>{{ escola.nome }}</td>
                         <td>{{ escola.municipio }}/{{ escola.estado }}</td>
                         <td>{{ escola.telefone or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm {% if escola.eh_escola_padrao %}btn-success{% else %}btn-outline-secondary{% endif %}" 
+                                    onclick="marcarEscolaPadrao({{ escola.id }}, event)" 
+                                    data-escola-id="{{ escola.id }}">
+                                {% if escola.eh_escola_padrao %}
+                                    <i class="bi bi-check-circle-fill"></i> Padrão
+                                {% else %}
+                                    <i class="bi bi-circle"></i> Marcar
+                                {% endif %}
+                            </button>
+                        </td>
                         <td>
                             <a href="{{ url_for('escolas.editar', id=escola.id) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil"></i>
@@ -57,4 +69,32 @@
     <a href="{{ url_for('escolas.cadastrar') }}">Cadastre a primeira escola</a>.
 </div>
 {% endif %}
+
+<script>
+async function marcarEscolaPadrao(escolaId, event) {
+    event.preventDefault();
+    
+    try {
+        const response = await fetch(`/escolas/${escolaId}/set-padrao`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (response.ok) {
+            // Recarregar a página
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert('❌ Erro: ' + (data.error || 'Não foi possível atualizar a escola'));
+        }
+    } catch (error) {
+        console.error('Erro ao marcar escola padrão:', error);
+        alert('❌ Erro ao conectar com o servidor');
+    }
+}
+</script>
+
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from models import Escola, Gestor
 from extensions import db
 from werkzeug.utils import secure_filename
@@ -115,3 +115,77 @@ def deletar(id):
         flash(f'Erro ao desativar escola: {str(e)}', 'danger')
     
     return redirect(url_for('escolas.listar'))
+
+@bp.route('/cadastrar_rapido', methods=['POST'])
+def cadastrar_rapido():
+    """Cadastra uma escola rapidamente via AJAX (apenas nome)"""
+    try:
+        data = request.get_json()
+        nome = data.get('nome', '').strip()
+        
+        if not nome:
+            return jsonify({'success': False, 'message': 'Nome da escola é obrigatório'}), 400
+        
+        # Verificar se já existe
+        escola_existente = Escola.query.filter_by(nome=nome, ativa=True).first()
+        if escola_existente:
+            return jsonify({
+                'success': True, 
+                'message': 'Escola já existe no sistema',
+                'escola_id': escola_existente.id
+            })
+        
+        # Criar nova escola com dados mínimos
+        escola = Escola(
+            nome=nome,
+            endereco=data.get('endereco', 'Não informado'),
+            municipio=data.get('municipio', 'Não informado'),
+            estado=data.get('estado', 'RS')
+        )
+        
+        db.session.add(escola)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Escola cadastrada com sucesso',
+            'escola_id': escola.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@bp.route('/<int:id>/set-padrao', methods=['POST'])
+def set_padrao(id):
+    """Marca uma escola como padrão (escola emissora de históricos)"""
+    try:
+        escola = Escola.query.get(id)
+        
+        if not escola:
+            return jsonify({'error': 'Escola não encontrada'}), 404
+        
+        # Se já é padrão, desmarcar
+        if escola.eh_escola_padrao:
+            escola.eh_escola_padrao = False
+            mensagem = f"❌ {escola.nome} desmarcada como escola padrão"
+        else:
+            # Desmarcar todas as outras escolas
+            Escola.query.update({Escola.eh_escola_padrao: False})
+            
+            # Marcar esta como padrão
+            escola.eh_escola_padrao = True
+            mensagem = f"✅ {escola.nome} marcada como escola padrão dos históricos"
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': mensagem,
+            'eh_padrao': escola.eh_escola_padrao
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

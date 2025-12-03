@@ -128,9 +128,10 @@
             <div id="dadosConclusao" style="display: {% if historico.conclusao_curso %}block{% else %}none{% endif %};">
                 <div class="row">
                     <div class="col-md-4">
-                        <label class="form-label">Data de Conclusão</label>
-                        <input type="date" class="form-control" name="data_conclusao" 
-                               value="{{ historico.data_conclusao }}">
+                        <label class="form-label">Ano de Conclusão</label>
+                        <input type="number" class="form-control" name="ano_conclusao" 
+                               min="1960" max="2030" placeholder="Ex: 2003"
+                               value="{{ historico.data_conclusao.year if historico.data_conclusao else '' }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Amparo Legal</label>
@@ -143,23 +144,6 @@
                             </option>
                             {% endfor %}
                         </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Número do Certificado</label>
-                        <input type="text" class="form-control" name="numero_certificado" 
-                               value="{{ historico.numero_certificado or '' }}">
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Livro de Registro</label>
-                        <input type="text" class="form-control" name="livro_registro" 
-                               value="{{ historico.livro_registro or '' }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Folha de Registro</label>
-                        <input type="text" class="form-control" name="folha_registro" 
-                               value="{{ historico.folha_registro or '' }}">
                     </div>
                 </div>
             </div>

@@ -190,9 +190,10 @@
             <div id="campos_conclusao" style="{% if not historico.conclusao_curso %}display: none;{% endif %}">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label for="data_conclusao" class="form-label">Data de Conclusão</label>
-                        <input type="date" class="form-control" id="data_conclusao" name="data_conclusao"
-                               value="{{ historico.data_conclusao.strftime('%Y-%m-%d') if historico.data_conclusao else '' }}">
+                        <label for="ano_conclusao" class="form-label">Ano de Conclusão</label>
+                        <input type="number" class="form-control" id="ano_conclusao" name="ano_conclusao"
+                               min="1960" max="2030" placeholder="Ex: 2003"
+                               value="{{ historico.data_conclusao.year if historico.data_conclusao else '' }}">
                     </div>
 
                     <div class="col-md-8 mb-3">
@@ -206,27 +207,6 @@
                             </option>
                             {% endfor %}
                         </select>
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label for="numero_certificado" class="form-label">Nº do Certificado</label>
-                        <input type="text" class="form-control" id="numero_certificado" name="numero_certificado"
-                               value="{{ historico.numero_certificado or '' }}"
-                               placeholder="Ex: 001/2023">
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label for="livro_registro" class="form-label">Livro</label>
-                        <input type="text" class="form-control" id="livro_registro" name="livro_registro"
-                               value="{{ historico.livro_registro or '' }}"
-                               placeholder="Ex: 01">
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label for="folha_registro" class="form-label">Folha</label>
-                        <input type="text" class="form-control" id="folha_registro" name="folha_registro"
-                               value="{{ historico.folha_registro or '' }}"
-                               placeholder="Ex: 25">
                     </div>
                 </div>
             </div>
@@ -253,13 +233,6 @@
                     <input type="date" class="form-control" id="data_emissao" name="data_emissao"
                            value="{{ historico.data_emissao.strftime('%Y-%m-%d') if historico.data_emissao else '' }}">
                 </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="dias_letivos" class="form-label">Dias Letivos</label>
-                    <input type="number" class="form-control" id="dias_letivos" name="dias_letivos"
-                           value="{{ historico.dias_letivos or '' }}"
-                           placeholder="Ex: 200" min="0">
-                </div>
             </div>
         </div>
     </div>
@@ -285,11 +258,8 @@ document.getElementById('conclusao_curso').addEventListener('change', function()
     
     // Se desmarcar, limpar os campos de conclusão
     if (!this.checked) {
-        document.getElementById('data_conclusao').value = '';
+        document.getElementById('ano_conclusao').value = '';
         document.getElementById('amparo_conclusao_id').value = '';
-        document.getElementById('numero_certificado').value = '';
-        document.getElementById('livro_registro').value = '';
-        document.getElementById('folha_registro').value = '';
     }
 });
 

@@ -82,12 +82,21 @@ def gerar_pdf_historico(historico):
     Returns:
         bytes: PDF gerado em formato bytes
     """
+    from models import Escola
+    
+    # Buscar ESCOLA PADRÃO (marcada como escola emissora de históricos)
+    escola_emissora = Escola.query.filter_by(eh_escola_padrao=True).first()
+    
+    # Se não houver escola padrão, usar a primeira
+    if not escola_emissora:
+        escola_emissora = Escola.query.first()
     
     # Preparar dados para o template
     dados = {
         'historico': historico,
         'aluno': historico.aluno,
         'modalidade': historico.modalidade,
+        'escola_emissora': escola_emissora,  # ESCOLA QUE EMITE O DOCUMENTO
         'anos_letivos': sorted(historico.anos_letivos, key=lambda x: x.ano),
         'data_emissao_extenso': data_por_extenso(historico.data_emissao) if historico.data_emissao else data_por_extenso(datetime.now().date()),
         'data_conclusao_extenso': data_por_extenso(historico.data_conclusao) if historico.data_conclusao else '',

@@ -1,0 +1,1888 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Histórico{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-pencil-square"></i> Editar Histórico</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-cloud-check-fill"></i> <strong>Auto-Save Ativado:</strong> Todas as alterações são salvas automaticamente no banco de dados a cada 10 segundos.
+</div>
+
+<form method="POST" action="{{ url_for('historicos.editar', id=historico.id) }}">
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Informações do Histórico</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-primary">
+                <i class="bi bi-info-circle"></i> <strong>Passo 1:</strong> Escolha primeiro o <strong>Nível</strong> (Fundamental/Médio/Supletivo/EJA) para carregar as opções corretas.
+            </div>
+            
+            <div class="row">
+                <!-- PASSO 1: NÍVEL -->
+                <div class="col-md-12 mb-4">
+                    <label for="nivel" class="form-label fs-5 text-primary">
+                        <i class="bi bi-1-circle-fill"></i> Nível de Ensino *
+                    </label>
+                    <select class="form-select form-select-lg" id="nivel" name="nivel" required>
+                        <option value="">Escolha o nível de ensino...</option>
+                        <option value="Fundamental 9 Anos">Ensino Fundamental - 9 Anos (1º ao 9º)</option>
+                        <option value="Fundamental 8 Séries">Ensino Fundamental - 8 Séries (1ª a 8ª)</option>
+                        <option value="Médio">Ensino Médio</option>
+                        <option value="Supletivo Fundamental">Supletivo - Ensino Fundamental</option>
+                        <option value="Supletivo Médio">Supletivo - Ensino Médio</option>
+                        <option value="EJA Fundamental">EJA - Ensino Fundamental</option>
+                        <option value="EJA Médio">EJA - Ensino Médio</option>
+                    </select>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div id="camposAdicionais">
+                <!-- PASSO 2: Dados do Aluno -->
+                <div class="alert alert-primary">
+                    <i class="bi bi-info-circle"></i> <strong>Passo 2:</strong> Selecione o <strong>Aluno</strong> para este histórico.
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12 mb-3">
+                        <label for="aluno_id" class="form-label fs-5 text-primary">
+                            <i class="bi bi-2-circle-fill"></i> Aluno *
+                        </label>
+                        <select class="form-select form-select-lg" id="aluno_id" name="aluno_id" required>
+                            <option value="">Selecione um aluno...</option>
+                            {% for aluno in alunos %}
+                            <option value="{{ aluno.id }}">{{ aluno.nome_completo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <!-- PASSO 3: Dados dos Anos Letivos e Disciplinas -->
+                <div class="alert alert-success">
+                    <i class="bi bi-info-circle"></i> <strong>Passo 3:</strong> Adicione os <strong>Anos Letivos</strong> e selecione as <strong>Disciplinas</strong> de cada ano.
+                </div>
+                
+                <div id="anosLetivos">
+                    <!-- Anos serão adicionados aqui dinamicamente com suas disciplinas -->
+                </div>
+                
+                <div class="mb-3" id="btnAdicionarAnoContainer" style="display: none;">
+                    <button type="button" class="btn btn-success" id="btnAdicionarAno">
+                        <i class="bi bi-plus-circle"></i> Adicionar Próximo Ano Letivo
+                    </button>
+                </div>
+                
+                <!-- Campo hidden para modalidade baseado no nível -->
+                <input type="hidden" id="modalidade_id" name="modalidade_id">
+            </div>
+        </div>
+    </div>
+
+    <!-- Escola de Origem (Transferência) -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Escola de Origem (Apenas se for transferência)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label for="escola_origem" class="form-label">Nome da Escola de Origem</label>
+                    <input type="text" class="form-control" id="escola_origem" name="escola_origem">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="municipio_origem" class="form-label">Município</label>
+                    <input type="text" class="form-control" id="municipio_origem" name="municipio_origem">
+                </div>
+                
+                <div class="col-md-1 mb-3">
+                    <label for="uf_origem" class="form-label">UF</label>
+                    <input type="text" class="form-control" id="uf_origem" name="uf_origem" maxlength="2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Observações e Opções</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="exibir_faltas_frequencia" 
+                           name="exibir_faltas_frequencia" value="1">
+                    <label class="form-check-label" for="exibir_faltas_frequencia">
+                        <strong>Exibir campos de Faltas e Frequência</strong>
+                        <small class="text-muted d-block">Marque se desejar controlar faltas e frequência por disciplina</small>
+                    </label>
+                </div>
+            </div>
+            <textarea class="form-control" id="observacoes" name="observacoes" rows="3" 
+                      placeholder="Informações adicionais sobre o histórico..."></textarea>
+        </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('historicos.listar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-info">
+            <i class="bi bi-save"></i> Criar Histórico
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let todasDisciplinas = [];
+let contadorAnos = 0;
+
+// ===== SISTEMA DE AUTO-SAVE =====
+const AUTO_SAVE_KEY = 'historico_form_data';
+const AUTO_SAVE_INTERVAL = 10000; // Salvar a cada 10 segundos
+let historicoIdAtual = {% if historico %}{{ historico.id }}{% else %}null{% endif %}; // ID do histórico sendo editado
+let autoSaveTimer = null;
+let salvandoNoBanco = false;
+
+// Salvar dados do formulário NO BANCO DE DADOS
+async function salvarFormularioBanco() {
+    if (salvandoNoBanco) {
+        console.log('⏳ Salvamento já em progresso...');
+        return;
+    }
+    
+    try {
+        salvandoNoBanco = true;
+        
+        const nivel = document.getElementById('nivel')?.value;
+        const aluno_id = document.getElementById('aluno_id')?.value;
+        const modalidade_id = document.getElementById('modalidade_id')?.value;
+        
+        // Validar campos obrigatórios
+        if (!nivel || !aluno_id || !modalidade_id) {
+            console.log('⚠️ Campos obrigatórios não preenchidos ainda');
+            salvandoNoBanco = false;
+            return;
+        }
+        
+        // Coletar dados dos anos
+        const anos = [];
+        document.querySelectorAll('[data-ano-idx]').forEach(anoElement => {
+            const idx = anoElement.dataset.anoIdx;
+            const anoInput = anoElement.querySelector(`[name="anos[${idx}][ano]"]`);
+            const serieSelect = anoElement.querySelector(`[name="anos[${idx}][serie]"]`);
+            const escolaSelect = anoElement.querySelector(`[name="anos[${idx}][escola_id]"]`);
+            
+            if (!anoInput || !serieSelect || !escolaSelect) return;
+            
+            const ano_obj = {
+                ano: parseInt(anoInput.value) || new Date().getFullYear(),
+                serie: serieSelect.value,
+                escola_id: escolaSelect.value !== 'outra' ? escolaSelect.value : null,
+                escola_nome_manual: null,
+                escola_municipio_manual: null,
+                escola_estado_manual: null,
+                disciplinas: []
+            };
+            
+            // Se escola manual
+            if (escolaSelect.value === 'outra') {
+                const nomeManual = anoElement.querySelector(`[name="anos[${idx}][escola_nome_manual]"]`);
+                const municipioManual = anoElement.querySelector(`[name="anos[${idx}][escola_municipio_manual]"]`);
+                const estadoManual = anoElement.querySelector(`[name="anos[${idx}][escola_estado_manual]"]`);
+                
+                ano_obj.escola_nome_manual = nomeManual?.value || '';
+                ano_obj.escola_municipio_manual = municipioManual?.value || '';
+                ano_obj.escola_estado_manual = estadoManual?.value || 'RS';
+            }
+            
+            // Coletar disciplinas marcadas
+            anoElement.querySelectorAll('input[type="checkbox"][name^="anos[' + idx + '][disciplinas]"]:checked').forEach(checkbox => {
+                const discId = checkbox.value;
+                const notaInput = anoElement.querySelector(`[name="anos[${idx}][disciplinas][${discId}][nota]"]`);
+                
+                ano_obj.disciplinas.push({
+                    disciplina_id: parseInt(discId),
+                    nota: notaInput?.value || ''
+                });
+            });
+            
+            anos.push(ano_obj);
+        });
+        
+        // Preparar dados para enviar
+        const dados = {
+            historico_id: historicoIdAtual,
+            aluno_id: parseInt(aluno_id),
+            modalidade_id: parseInt(modalidade_id),
+            nivel: nivel,
+            escola_origem: document.getElementById('escola_origem')?.value || '',
+            municipio_origem: document.getElementById('municipio_origem')?.value || '',
+            uf_origem: document.getElementById('uf_origem')?.value || '',
+            observacoes: document.getElementById('observacoes')?.value || '',
+            exibir_faltas_frequencia: document.getElementById('exibir_faltas_frequencia')?.checked || false,
+            anos: anos
+        };
+        
+        console.log('💾 Salvando no banco:', dados);
+        
+        // Enviar para o servidor
+        const response = await fetch('/historicos/auto-save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dados)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            historicoIdAtual = result.historico_id;
+            console.log('✅ Salvo no banco! ID:', historicoIdAtual);
+            
+            // Mostrar indicador visual
+            mostrarIndicadorSalvo();
+            
+            // Salvar também no localStorage como backup
+            salvarFormularioLocalStorage();
+        } else {
+            console.error('❌ Erro ao salvar:', result.error);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar no banco:', error);
+    } finally {
+        salvandoNoBanco = false;
+    }
+}
+
+// Mostrar indicador de salvamento
+function mostrarIndicadorSalvo() {
+    let indicador = document.getElementById('indicadorAutoSave');
+    if (!indicador) {
+        indicador = document.createElement('div');
+        indicador.id = 'indicadorAutoSave';
+        indicador.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(indicador);
+    }
+    
+    indicador.innerHTML = `
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> Salvo automaticamente às ${new Date().toLocaleTimeString()}
+        </div>
+    `;
+    
+    setTimeout(() => {
+        indicador.querySelector('.alert').classList.remove('show');
+        setTimeout(() => indicador.innerHTML = '', 500);
+    }, 3000);
+}
+
+// Salvar dados do formulário NO LOCALSTORAGE (backup)
+function salvarFormularioLocalStorage() {
+    try {
+        const form = document.querySelector('form');
+        if (!form) return;
+        
+        const dados = {
+            timestamp: new Date().toLocaleString('pt-BR'),
+            nivel: document.getElementById('nivel')?.value || '',
+            aluno_id: document.getElementById('aluno_id')?.value || '',
+            escola_origem: document.getElementById('escola_origem')?.value || '',
+            municipio_origem: document.getElementById('municipio_origem')?.value || '',
+            anos: window.disciplinasSelecionadasPorAno || {},
+            notas: {} // Salvar notas também
+        };
+        
+        // Coletar todas as notas
+        document.querySelectorAll('.nota-input').forEach(input => {
+            if (input.value) {
+                dados.notas[input.id] = input.value;
+            }
+        });
+        
+        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(dados));
+        console.log('💾 Auto-save realizado às', dados.timestamp);
+    } catch (e) {
+        console.error('Erro ao salvar no localStorage:', e);
+    }
+}
+
+// Recuperar dados salvos
+function recuperarFormularioLocalStorage() {
+    try {
+        const dados = localStorage.getItem(AUTO_SAVE_KEY);
+        if (!dados) return null;
+        return JSON.parse(dados);
+    } catch (e) {
+        console.error('Erro ao recuperar dados salvos:', e);
+        return null;
+    }
+}
+
+// Mostrar notificação de recuperação
+function mostrarNotificacaoRecuperacao(dados) {
+    const div = document.createElement('div');
+    div.className = 'alert alert-warning alert-dismissible fade show';
+    div.id = 'alertaRecuperacao';
+    div.innerHTML = `
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <strong><i class="bi bi-arrow-counterclockwise"></i> Recuperação Automática</strong><br>
+        Encontramos um formulário salvo de <strong>${dados.timestamp}</strong>
+        <br><small class="text-muted">Seu trabalho foi preservado!</small>
+        <br>
+        <button type="button" class="btn btn-sm btn-warning mt-2" onclick="restaurarFormularioLocalStorage()">
+            <i class="bi bi-download"></i> Restaurar Dados
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="limparDadosSalvos()">
+            <i class="bi bi-trash"></i> Descartar
+        </button>
+    `;
+    
+    const container = document.querySelector('.row.mb-4');
+    if (container) {
+        container.insertAdjacentElement('afterend', div);
+    }
+}
+
+// Restaurar dados
+function restaurarFormularioLocalStorage() {
+    const dados = recuperarFormularioLocalStorage();
+    if (!dados) {
+        alert('Nenhum dado salvo encontrado.');
+        return;
+    }
+    
+    try {
+        // Restaurar nível
+        const nivelSelect = document.getElementById('nivel');
+        if (nivelSelect && dados.nivel) {
+            nivelSelect.value = dados.nivel;
+            nivelSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Aguardar um pouco para os campos serem carregados
+        setTimeout(() => {
+            // Restaurar aluno
+            const alunoSelect = document.getElementById('aluno_id');
+            if (alunoSelect && dados.aluno_id) {
+                alunoSelect.value = dados.aluno_id;
+            }
+            
+            // Restaurar escola origem
+            if (dados.escola_origem) {
+                document.getElementById('escola_origem').value = dados.escola_origem;
+            }
+            if (dados.municipio_origem) {
+                document.getElementById('municipio_origem').value = dados.municipio_origem;
+            }
+            
+            // PASSO 1: Restaurar disciplinas na estrutura de dados
+            if (dados.anos && Object.keys(dados.anos).length > 0) {
+                Object.assign(window.disciplinasSelecionadasPorAno, dados.anos);
+                console.log('📊 Disciplinas restauradas:', window.disciplinasSelecionadasPorAno);
+                
+                // PASSO 2: Obter IDs dos anos
+                const anoIds = Object.keys(dados.anos).map(Number).sort((a, b) => a - b);
+                console.log('📋 Anos a restaurar:', anoIds);
+                
+                // PASSO 3: Sincronizar contadorAnos com o maior ID ANTES de criar
+                const maxAnoId = Math.max(...anoIds);
+                contadorAnos = maxAnoId - 1; // -1 porque adicionarAnoLetivo vai incrementar
+                console.log('🔢 contadorAnos ajustado para:', contadorAnos);
+                
+                // PASSO 4: Criar os cards dos anos
+                setTimeout(() => {
+                    anoIds.forEach((anoId, index) => {
+                        // Se o ano não existe no DOM ainda, criar
+                        if (!document.getElementById(`anoCard_${anoId}`)) {
+                            adicionarAnoLetivo();
+                            console.log(`✅ Ano ${anoId} criado (contadorAnos agora é ${contadorAnos})`);
+                        }
+                    });
+                    
+                    // PASSO 5: Restaurar os dados visuais das disciplinas
+                    setTimeout(() => {
+                        anoIds.forEach(anoId => {
+                            atualizarListaDisciplinasSelecionadas(anoId);
+                            console.log(`🔄 Lista atualizada para ano ${anoId}`);
+                        });
+                        
+                        // PASSO 6: Restaurar as notas
+                        setTimeout(() => {
+                            Object.keys(dados.notas || {}).forEach(notaId => {
+                                const input = document.getElementById(notaId);
+                                if (input) {
+                                    input.value = dados.notas[notaId];
+                                    console.log(`📝 Nota restaurada: ${notaId} = ${dados.notas[notaId]}`);
+                                }
+                            });
+                            alert('✅ Dados restaurados com sucesso!');
+                            limparDadosSalvos();
+                        }, 500);
+                    }, 500);
+                }, 100);
+            } else {
+                alert('✅ Nenhuma disciplina salva para restaurar.');
+                limparDadosSalvos();
+            }
+        }, 500);
+    } catch (e) {
+        console.error('Erro ao restaurar:', e);
+        alert('Erro ao restaurar os dados.');
+    }
+}
+
+// Limpar dados salvos
+function limparDadosSalvos() {
+    localStorage.removeItem(AUTO_SAVE_KEY);
+    const alerta = document.getElementById('alertaRecuperacao');
+    if (alerta) {
+        alerta.remove();
+    }
+    console.log('🗑️ Dados salvos removidos');
+}
+
+// Expor funções globalmente
+window.restaurarFormularioLocalStorage = restaurarFormularioLocalStorage;
+window.limparDadosSalvos = limparDadosSalvos;
+
+// Aguardar o DOM carregar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM carregado, inicializando eventos...');
+
+    // PASSO 1: Ao selecionar o NÍVEL, ajustar série e modalidade
+    document.getElementById('nivel').addEventListener('change', function() {
+        const nivel = this.value;
+        const modalidadeInput = document.getElementById('modalidade_id');
+        
+        console.log('Nível selecionado:', nivel);
+        
+        if (!nivel) {
+            return;
+        }
+        
+        // Definir modalidade baseada no nível
+        if (nivel.includes('Supletivo')) {
+            modalidadeInput.value = '2'; // ID do Supletivo
+        } else if (nivel.includes('EJA')) {
+            modalidadeInput.value = '3'; // ID do EJA
+        } else {
+            modalidadeInput.value = '1'; // ID do Regular
+        }
+        
+        console.log('Modalidade definida:', modalidadeInput.value);
+        
+        // Definir séries baseadas no nível
+        let seriesDisponiveis = [];
+        
+        if (nivel === 'Fundamental 9 Anos') {
+            seriesDisponiveis = [
+                '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano',
+                '6º Ano', '7º Ano', '8º Ano', '9º Ano'
+            ];
+        } else if (nivel === 'Fundamental 8 Séries') {
+            seriesDisponiveis = [
+                '1ª Série', '2ª Série', '3ª Série', '4ª Série',
+                '5ª Série', '6ª Série', '7ª Série', '8ª Série'
+            ];
+        } else if (nivel === 'Supletivo Fundamental' || nivel === 'EJA Fundamental') {
+            seriesDisponiveis = [
+                'Etapa I', 'Etapa II', 'Etapa III', 'Etapa IV', 'Etapa V',
+                'Etapa VI', 'Etapa VII', 'Etapa VIII', 'Etapa IX'
+            ];
+        } else if (nivel === 'Médio') {
+            seriesDisponiveis = ['1º Ano', '2º Ano', '3º Ano'];
+        } else if (nivel === 'Supletivo Médio' || nivel === 'EJA Médio') {
+            seriesDisponiveis = ['Etapa I', 'Etapa II', 'Etapa III'];
+        }
+        
+        // Armazenar séries disponíveis globalmente
+        window.seriesDisponiveis = seriesDisponiveis;
+        
+        // Limpar anos anteriores
+        document.getElementById('anosLetivos').innerHTML = '';
+        contadorAnos = 0;
+        
+        // Adicionar primeiro ano automaticamente
+        adicionarAnoLetivo();
+    });
+
+    // Botão adicionar ano
+    document.getElementById('btnAdicionarAno').addEventListener('click', adicionarAnoLetivo);
+
+    // Função para mostrar/ocultar campo de escola manual
+    window.toggleEscolaManual = function(anoId) {
+        const select = document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`);
+        const container = document.getElementById(`escolaManualContainer_${anoId}`);
+        const manualInput = container?.querySelector('.escola-manual-input');
+        
+        console.log('toggleEscolaManual chamado:', anoId, 'valor:', select?.value);
+        
+        if (select && container) {
+            if (select.value === 'outra') {
+                container.style.display = 'flex';  // Usar flex para row do Bootstrap
+                if (manualInput) {
+                    manualInput.required = true;
+                }
+            } else {
+                container.style.display = 'none';
+                if (manualInput) {
+                    manualInput.required = false;
+                    manualInput.value = '';
+                }
+            }
+        } else {
+            console.log('Elemento não encontrado - select:', !!select, 'container:', !!container);
+        }
+    };
+
+    // Função para salvar escola manual no banco de dados
+    window.salvarEscolaManual = async function(anoId) {
+        const inputNome = document.getElementById(`escolaManualInput_${anoId}`);
+        const inputMunicipio = document.getElementById(`escolaMunicipioInput_${anoId}`);
+        const inputEstado = document.getElementById(`escolaEstadoInput_${anoId}`);
+        
+        const nomeEscola = inputNome?.value.trim();
+        const municipio = inputMunicipio?.value.trim();
+        const estado = inputEstado?.value.trim();
+        
+        if (!nomeEscola) {
+            alert('Por favor, digite o nome da escola antes de salvar.');
+            inputNome?.focus();
+            return;
+        }
+        
+        if (!municipio) {
+            alert('Por favor, digite o município da escola antes de salvar.');
+            inputMunicipio?.focus();
+            return;
+        }
+        
+        if (!estado) {
+            alert('Por favor, digite o estado da escola antes de salvar.');
+            inputEstado?.focus();
+            return;
+        }
+        
+        if (!confirm(`Deseja cadastrar a escola "${nomeEscola} - ${municipio}/${estado}" no sistema para uso futuro?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/escolas/cadastrar_rapido', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nome: nomeEscola,
+                    endereco: 'Não informado',
+                    municipio: municipio,
+                    estado: estado
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(`Escola "${nomeEscola}" cadastrada com sucesso!`);
+                
+                // Adicionar a escola à lista de seleção e selecionar automaticamente
+                const select = document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`);
+                if (select) {
+                    // Adicionar nova opção antes da opção "Digitar manualmente"
+                    const novaOpcao = new Option(`${nomeEscola} - ${municipio}/${estado}`, data.escola_id, true, true);
+                    const ultimaOpcao = select.options[select.options.length - 1];
+                    select.insertBefore(novaOpcao, ultimaOpcao);
+                    
+                    // Ocultar campo manual
+                    toggleEscolaManual(anoId);
+                }
+            } else {
+                alert(`Erro ao cadastrar escola: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao cadastrar escola. Verifique o console para mais detalhes.');
+        }
+    };
+
+    // Função para carregar disciplinas para um ano específico
+    window.carregarDisciplinasAno = async function(anoId) {
+        const buscarInput = document.getElementById(`buscarDisciplina_${anoId}`);
+        const filtroSelect = document.getElementById(`filtroPeriodo_${anoId}`);
+        const listaDiv = document.getElementById(`listaDisciplinas_${anoId}`);
+        
+        try {
+            const response = await fetch('/disciplinas/buscar');
+            const disciplinas = await response.json();
+            
+            let disciplinasFiltradas = disciplinas;
+            
+            // Filtrar por termo de busca
+            const termo = buscarInput.value.toLowerCase().trim();
+            if (termo) {
+                disciplinasFiltradas = disciplinasFiltradas.filter(d => 
+                    d.nome.toLowerCase().includes(termo) || 
+                    (d.codigo && d.codigo.toLowerCase().includes(termo))
+                );
+            }
+            
+            // Filtrar por período
+            const periodo = filtroSelect.value;
+            if (periodo) {
+                const [anoInicio, anoFim] = periodo.split('-').map(Number);
+                disciplinasFiltradas = disciplinasFiltradas.filter(d => {
+                    if (!d.ano_inicio) return false;
+                    return d.ano_inicio >= anoInicio && (d.ano_fim || 2003) <= anoFim;
+                });
+            }
+            
+            // Exibir disciplinas
+            if (disciplinasFiltradas.length === 0) {
+                listaDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Nenhuma disciplina encontrada.
+                    </div>
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Adicionar Disciplina Manualmente</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome da Disciplina *</label>
+                                    <input type="text" class="form-control" id="discNomeManual_${anoId}" placeholder="Ex: Matemática">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Ano Início</label>
+                                    <input type="number" class="form-control" id="discAnoInicio_${anoId}" placeholder="1960" min="1960" max="2003">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Ano Fim</label>
+                                    <input type="number" class="form-control" id="discAnoFim_${anoId}" placeholder="2003" min="1960" max="2003">
+                                </div>
+                                <div class="col-md-2 mb-3 d-flex align-items-end">
+                                    <button type="button" class="btn btn-success w-100" onclick="salvarDisciplinaManual(${anoId})">
+                                        <i class="bi bi-save"></i> Salvar
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">Esta disciplina será cadastrada no sistema e ficará disponível para uso futuro.</small>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="alert alert-success mb-3">
+                    <i class="bi bi-check-circle"></i> <strong>${disciplinasFiltradas.length} disciplinas</strong> disponíveis
+                    <span class="ms-3 text-dark">
+                        | <strong id="total-selecionadas-${anoId}">0</strong> selecionadas neste ano
+                    </span>
+                </div>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+            `;
+            disciplinasFiltradas.forEach(disc => {
+                html += `
+                    <div class="col">
+                        <div class="card h-100 disciplina-card" style="cursor: pointer;" 
+                             data-disciplina-id="${disc.id}" 
+                             data-disciplina-nome="${disc.nome}" 
+                             data-disciplina-codigo="${disc.codigo || ''}" 
+                             data-disciplina-ch="${disc.carga_horaria_padrao || ''}">
+                            <div class="card-body d-flex align-items-start gap-2">
+                                <div class="form-check m-0 flex-grow-1">
+                                    <input class="form-check-input disciplina-checkbox" type="checkbox"
+                                           id="disc_${anoId}_${disc.id}"
+                                           data-disciplina-id="${disc.id}"
+                                           data-disciplina-nome="${disc.nome}"
+                                           data-disciplina-codigo="${disc.codigo || ''}"
+                                           data-disciplina-ch="${disc.carga_horaria_padrao || ''}">
+                                    <label class="form-check-label" for="disc_${anoId}_${disc.id}">
+                                        <strong>${disc.nome}</strong>
+                                        ${disc.codigo ? `<span class="badge bg-secondary ms-1">${disc.codigo}</span>` : ''}
+                                        <br><small class="text-muted">${disc.ano_inicio || ''} - ${disc.ano_fim || '2003'}</small>
+                                    </label>
+                                </div>
+                                ${disc.carga_horaria_padrao ? `<span class="badge bg-info text-dark">${disc.carga_horaria_padrao}h</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            listaDiv.innerHTML = html;
+
+            const selectedIds = (disciplinasSelecionadasPorAno[anoId] || []).map(d => d.id);
+            listaDiv.querySelectorAll('.disciplina-checkbox').forEach(cb => {
+                const discId = parseInt(cb.dataset.disciplinaId, 10);
+                const card = cb.closest('.disciplina-card');
+                const nome = cb.dataset.disciplinaNome;
+                const codigo = cb.dataset.disciplinaCodigo;
+                const cargaHoraria = cb.dataset.disciplinaCh;
+                const estaSelecionada = selectedIds.includes(discId);
+
+                cb.checked = estaSelecionada;
+                marcarCardSelecionado(card, estaSelecionada);
+
+                cb.addEventListener('change', function() {
+                    if (this.checked) {
+                        adicionarDisciplinaAoAno(anoId, discId, nome, codigo, cargaHoraria);
+                    } else {
+                        removerDisciplinaDoAno(anoId, discId);
+                    }
+                    marcarCardSelecionado(card, this.checked);
+                    atualizarContador(anoId);
+                    salvarFormularioBanco();
+                });
+
+                card.addEventListener('click', function(event) {
+                    if (event.target === cb || event.target.tagName === 'LABEL') {
+                        return;
+                    }
+                    cb.click();
+                });
+            });
+
+            atualizarContador(anoId);
+        } catch (error) {
+            console.error('Erro ao carregar disciplinas:', error);
+            listaDiv.innerHTML = '<div class="alert alert-danger">Erro ao carregar disciplinas.</div>';
+        }
+    };
+
+    function marcarCardSelecionado(card, selecionado) {
+        if (!card) return;
+        card.classList.toggle('border-primary', selecionado);
+        card.classList.toggle('shadow-sm', selecionado);
+    }
+
+    // Função para limpar busca
+    window.limparBuscaAno = function(anoId) {
+        document.getElementById(`buscarDisciplina_${anoId}`).value = '';
+        carregarDisciplinasAno(anoId);
+    };
+
+    // Função para salvar disciplina manual no banco de dados
+    window.salvarDisciplinaManual = async function(anoId) {
+        const inputNome = document.getElementById(`discNomeManual_${anoId}`);
+        const inputAnoInicio = document.getElementById(`discAnoInicio_${anoId}`);
+        const inputAnoFim = document.getElementById(`discAnoFim_${anoId}`);
+        
+        const nome = inputNome?.value.trim();
+        const anoInicio = inputAnoInicio?.value || 1960;
+        const anoFim = inputAnoFim?.value || 2003;
+        
+        if (!nome) {
+            alert('Por favor, digite o nome da disciplina antes de salvar.');
+            inputNome?.focus();
+            return;
+        }
+        
+        if (!confirm(`Deseja cadastrar a disciplina "${nome}" no sistema para uso futuro?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/disciplinas/cadastrar_rapido', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nome: nome,
+                    ano_inicio: parseInt(anoInicio),
+                    ano_fim: parseInt(anoFim),
+                    carga_horaria_padrao: 60
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(`Disciplina "${nome}" cadastrada com sucesso!`);
+                // Recarregar a lista de disciplinas para mostrar a nova
+                carregarDisciplinasAno(anoId);
+            } else {
+                alert(`Erro ao cadastrar disciplina: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao cadastrar disciplina. Verifique o console para mais detalhes.');
+        }
+    };
+
+    // Função para finalizar um ano e permitir adicionar o próximo
+    window.finalizarAno = function(anoId) {
+        const card = document.getElementById(`anoCard_${anoId}`);
+        const disciplinasSelecionadas = card.querySelectorAll('input[type="checkbox"]:checked');
+        
+        if (disciplinasSelecionadas.length === 0) {
+            alert('Por favor, selecione pelo menos uma disciplina para este ano letivo.');
+            return;
+        }
+        
+        // Desabilitar edição do ano finalizado
+        card.querySelectorAll('input, select, button').forEach(el => {
+            if (!el.classList.contains('form-check-input')) {
+                el.disabled = true;
+            }
+        });
+        
+        // Adicionar badge de finalizado
+        const header = card.querySelector('.card-header strong');
+        header.innerHTML += ' <span class="badge bg-success">✓ Finalizado</span>';
+        
+        // Mostrar botão de adicionar próximo ano
+        document.getElementById('btnAdicionarAnoContainer').style.display = 'block';
+        
+        alert(`Ano #${anoId} finalizado com ${disciplinasSelecionadas.length} disciplina(s). Você pode adicionar o próximo ano letivo.`);
+    };
+
+    // Função para adicionar um novo ano letivo
+    function adicionarAnoLetivo() {
+        contadorAnos++;
+        const container = document.getElementById('anosLetivos');
+        
+        const anoCard = document.createElement('div');
+        anoCard.className = 'card mb-3';
+        anoCard.id = `anoCard_${contadorAnos}`;
+        anoCard.innerHTML = `
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <strong><i class="bi bi-calendar3"></i> Ano Letivo #${contadorAnos}</strong>
+            ${contadorAnos > 1 ? `<button type="button" class="btn btn-sm btn-light" onclick="removerAnoLetivo(${contadorAnos})">
+                <i class="bi bi-trash"></i> Remover
+            </button>` : ''}
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-calendar"></i> Ano Letivo *
+                    </label>
+                    <input type="number" class="form-control ano-input" name="anos[${contadorAnos}][ano]" 
+                           min="1960" max="2003" required data-ano-id="${contadorAnos}">
+                    <small class="text-muted">1960-2003</small>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-mortarboard"></i> Série/Ano/Etapa *
+                    </label>
+                    <select class="form-select serie-select" name="anos[${contadorAnos}][serie]" required data-ano-id="${contadorAnos}">
+                        <option value="">Selecione...</option>
+                        ${window.seriesDisponiveis.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-building"></i> Escola Cursada *
+                    </label>
+                    <select class="form-select escola-select" name="anos[${contadorAnos}][escola_id]" data-ano-id="${contadorAnos}" onchange="toggleEscolaManual(${contadorAnos})">
+                        <option value="">Selecione...</option>
+                        {% for escola in escolas %}
+                        <option value="{{ escola.id }}">{{ escola.nome }}</option>
+                        {% endfor %}
+                        <option value="outra">✏️ Digitar nome da escola manualmente</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Campo manual em nova linha -->
+            <div class="row escola-manual-container" id="escolaManualContainer_${contadorAnos}" style="display: none;">
+                <div class="col-md-5 mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-pencil"></i> Nome da Escola (Manual) *
+                    </label>
+                    <input type="text" class="form-control escola-manual-input" id="escolaManualInput_${contadorAnos}" name="anos[${contadorAnos}][escola_nome_manual]" placeholder="Digite o nome da escola" data-ano-id="${contadorAnos}">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-geo-alt"></i> Município *
+                    </label>
+                    <input type="text" class="form-control escola-municipio-input" id="escolaMunicipioInput_${contadorAnos}" name="anos[${contadorAnos}][escola_municipio_manual]" placeholder="Ex: Porto Alegre" data-ano-id="${contadorAnos}">
+                </div>
+                
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-map"></i> Estado *
+                    </label>
+                    <input type="text" class="form-control escola-estado-input" id="escolaEstadoInput_${contadorAnos}" name="anos[${contadorAnos}][escola_estado_manual]" placeholder="RS" maxlength="2" value="RS" data-ano-id="${contadorAnos}">
+                </div>
+                
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-success w-100" onclick="salvarEscolaManual(${contadorAnos})" title="Salvar esta escola no banco de dados para uso futuro">
+                        <i class="bi bi-save"></i> Salvar Escola
+                    </button>
+                </div>
+                
+                <div class="col-md-12">
+                    <small class="text-muted">Estes dados aparecerão no histórico. Use o botão "Salvar Escola" para cadastrá-la no sistema.</small>
+                </div>
+            </div>
+            
+            <!-- Seção de Disciplinas deste Ano -->
+            <div class="mt-4 pt-3 border-top">
+                <h6 class="text-success"><i class="bi bi-book"></i> Disciplinas do Ano #${contadorAnos}</h6>
+                
+                <!-- BUSCAR DISCIPLINA EXISTENTE - DESTAQUE PRINCIPAL -->
+                <div class="card mb-3 border-primary border-2">
+                    <div class="card-header bg-primary text-white">
+                        <strong><i class="bi bi-search"></i> Buscar Disciplina Existente</strong>
+                        <span class="badge bg-warning text-dark ms-2">Principal</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="position-relative">
+                            <input type="text" 
+                                   class="form-control buscar-disciplina-autocomplete" 
+                                   id="autocompleteDisciplina_${contadorAnos}" 
+                                   placeholder="Digite: GEO, MAT, PORT, HIST..."
+                                   autocomplete="off"
+                                   data-ano-id="${contadorAnos}">
+                            <div id="sugestoesDisciplinas_${contadorAnos}" 
+                                 class="list-group position-absolute w-100" 
+                                 style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;">
+                            </div>
+                        </div>
+                        <small class="text-muted">Busque na base de dados primeiro. Se não encontrar, use "Adicionar Nova" abaixo.</small>
+                    </div>
+                </div>
+                
+                <!-- ADICIONAR NOVA DISCIPLINA - SECUNDÁRIA -->
+                <div class="card mb-3 border-secondary">
+                    <div class="card-header bg-light">
+                        <strong><i class="bi bi-plus-circle"></i> Adicionar Nova Disciplina</strong>
+                        <span class="badge bg-secondary ms-2">Se não encontrar</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-10">
+                                <label class="form-label form-label-sm">Nome da Disciplina *</label>
+                                <input type="text" class="form-control form-control-sm" 
+                                       id="novaDisciplinaNome_${contadorAnos}" 
+                                       placeholder="Ex: Integração Social">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-success w-100" 
+                                        onclick="salvarNovaDisciplinaSimples(${contadorAnos})">
+                                    <i class="bi bi-save"></i> Salvar
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted">Será salva no banco e adicionada ao histórico.</small>
+                    </div>
+                </div>
+                
+                <!-- Lista de Disciplinas Selecionadas -->
+                <div id="disciplinasSelecionadas_${contadorAnos}" class="mb-3">
+                    <div class="alert alert-info alert-sm">
+                        <i class="bi bi-info-circle"></i> Nenhuma disciplina adicionada ainda.
+                    </div>
+                </div>
+                
+                <div class="text-end">
+                    <button type="button" class="btn btn-success" onclick="finalizarAno(${contadorAnos})">
+                        <i class="bi bi-check-circle"></i> Finalizar Este Ano e Adicionar Próximo
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+        container.appendChild(anoCard);
+        
+        // Adicionar listeners para verificar preenchimento
+        anoCard.querySelector('.ano-input').addEventListener('change', verificarAnosPreenchidos);
+        anoCard.querySelector('.serie-select').addEventListener('change', verificarAnosPreenchidos);
+        anoCard.querySelector('.escola-select').addEventListener('change', verificarAnosPreenchidos);
+        
+        // Configurar autocomplete para este ano
+        configurarAutocompleteDisciplina(contadorAnos);
+        
+        verificarAnosPreenchidos();
+    }
+
+    // Função para remover um ano letivo
+    function removerAnoLetivo(id) {
+        const card = document.getElementById(`anoCard_${id}`);
+        if (card) {
+            card.remove();
+            verificarAnosPreenchidos();
+        }
+    }
+
+    // Verificar se pelo menos um ano está preenchido
+    function verificarAnosPreenchidos() {
+        // Esta função agora apenas valida - não precisa mais mostrar/ocultar card de disciplinas
+        const anosInputs = document.querySelectorAll('.ano-input');
+        const seriesSelects = document.querySelectorAll('.serie-select');
+        const escolasSelects = document.querySelectorAll('.escola-select');
+        
+        let algumPreenchido = false;
+        
+        for (let i = 0; i < anosInputs.length; i++) {
+            if (anosInputs[i].value && seriesSelects[i].value && escolasSelects[i].value) {
+                algumPreenchido = true;
+                break;
+            }
+        }
+        
+        // Apenas retorna se está preenchido (para uso futuro se necessário)
+        return algumPreenchido;
+    }
+
+    // Atualizar seções de disciplinas para cada ano (mantida para compatibilidade)
+    function atualizarDisciplinasPorAno() {
+        // Função desativada - disciplinas agora são selecionadas globalmente
+        return;
+    }
+
+    // Buscar disciplina por nome
+    const inputBuscar = document.getElementById('buscarDisciplina');
+    if (inputBuscar) {
+        inputBuscar.addEventListener('input', function() {
+            const termo = this.value.toLowerCase().trim();
+            console.log('Buscando por:', termo, '| Total disciplinas carregadas:', todasDisciplinas.length);
+            
+            if (termo.length >= 2) {
+                const disciplinasFiltradas = todasDisciplinas.filter(d => 
+                    d.nome.toLowerCase().includes(termo) || 
+                    (d.codigo && d.codigo.toLowerCase().includes(termo))
+                );
+                console.log('Disciplinas filtradas:', disciplinasFiltradas.length);
+                exibirDisciplinas(disciplinasFiltradas);
+            } else if (termo.length === 0) {
+                console.log('Termo vazio, exibindo todas');
+                exibirDisciplinas(todasDisciplinas);
+            }
+        });
+    }
+
+    // Filtro por período
+    const filtroAno = document.getElementById('filtroAno');
+    if (filtroAno) {
+        filtroAno.addEventListener('change', function() {
+            const periodo = this.value;
+            
+            if (!periodo) {
+                exibirDisciplinas(todasDisciplinas);
+                return;
+            }
+            
+            const [anoInicio, anoFim] = periodo.split('-').map(Number);
+            const disciplinasFiltradas = todasDisciplinas.filter(d => {
+                if (!d.ano_inicio) return false;
+                
+                if (anoFim) {
+                    return d.ano_inicio >= anoInicio && d.ano_inicio <= anoFim;
+                } else {
+                    return d.ano_inicio >= anoInicio;
+                }
+            });
+            
+            exibirDisciplinas(disciplinasFiltradas);
+        });
+    }
+
+    // Limpar busca
+    const btnLimpar = document.getElementById('btnLimparBusca');
+    if (btnLimpar) {
+        btnLimpar.addEventListener('click', function() {
+            console.log('Botão Limpar clicado');
+            document.getElementById('buscarDisciplina').value = '';
+            document.getElementById('filtroAno').value = '';
+            console.log('Exibindo todas as disciplinas:', todasDisciplinas.length);
+            exibirDisciplinas(todasDisciplinas);
+        });
+    }
+
+    // Botão Procurar Disciplina - carregar disciplinas e focar na busca
+    const btnProcurar = document.getElementById('btnProcurarDisciplina');
+    if (btnProcurar) {
+        btnProcurar.addEventListener('click', function() {
+            console.log('Botão Procurar Disciplina clicado!');
+            const nivelOriginal = document.getElementById('nivel').value;
+            const modalidadeId = document.getElementById('modalidade_id').value;
+            
+            console.log('Nível:', nivelOriginal, 'Modalidade ID:', modalidadeId);
+            
+            if (!nivelOriginal) {
+                alert('Por favor, escolha primeiro o Nível de Ensino');
+                document.getElementById('nivel').focus();
+                return;
+            }
+            
+            // Carregar todas as disciplinas do nível selecionado (ano 1980 como padrão)
+            const modalidadeNomes = {'1': 'Regular', '2': 'Supletivo', '3': 'EJA'};
+            const modalidade = modalidadeNomes[modalidadeId] || 'Regular';
+            const nivel = nivelOriginal.includes('Fundamental') ? 'Fundamental' : 'Médio';
+            
+            const url = `/disciplinas/api/carregar-grade?ano=1980&modalidade=${modalidade}&nivel=${nivel}`;
+            console.log('URL da API:', url);
+            
+            carregarDisciplinas(url);
+            
+            // Focar na busca após carregar
+            setTimeout(() => {
+                document.getElementById('buscarDisciplina').focus();
+                document.getElementById('buscarDisciplina').select();
+            }, 500);
+        });
+    }
+
+    function carregarDisciplinas(url) {
+        console.log('carregarDisciplinas chamada com URL:', url);
+        const container = document.getElementById('listaDisciplinas');
+        container.innerHTML = "<div class='text-center'><div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Carregando...</span></div><p class='mt-2'>Carregando disciplinas...</p></div>";
+        
+        fetch(url)
+            .then(response => {
+                console.log('Resposta recebida:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dados JSON:', data);
+                console.log('Total de disciplinas:', data.disciplinas ? data.disciplinas.length : 0);
+                if (data.disciplinas && data.disciplinas.length > 0) {
+                    todasDisciplinas = data.disciplinas;
+                    exibirDisciplinas(data.disciplinas);
+                } else {
+                    container.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Nenhuma disciplina encontrada.
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar disciplinas:', error);
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> Erro ao carregar disciplinas: ${error.message}
+                    </div>
+                `;
+            });
+    }
+
+    function exibirDisciplinas(disciplinas) {
+        const container = document.getElementById('listaDisciplinas');
+        
+        if (disciplinas.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Nenhuma disciplina encontrada com os filtros aplicados.
+                </div>
+            `;
+            return;
+        }
+        
+        // Ordenar alfabeticamente
+        disciplinas.sort((a, b) => a.nome.localeCompare(b.nome));
+        
+        let html = `
+            <div class="alert alert-success mb-3">
+                <i class="bi bi-check-circle"></i> <strong>${disciplinas.length} disciplinas</strong> disponíveis
+                <span class="ms-3 text-dark">
+                    | <strong id="total-selecionadas-geral">0</strong> selecionadas
+                </span>
+            </div>
+            <div class="mb-3">
+                <button type="button" class="btn btn-sm btn-primary" onclick="selecionarTodas()">
+                    <i class="bi bi-check-all"></i> Selecionar Todas
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="desmarcarTodas()">
+                    <i class="bi bi-x-circle"></i> Desmarcar Todas
+                </button>
+            </div>
+            <div class="row g-2">
+        `;
+        
+        disciplinas.forEach(disc => {
+            html += `
+                <div class="col-md-6">
+                    <div class="form-check p-2 border rounded hover-shadow">
+                        <input class="form-check-input disciplina-checkbox" type="checkbox" 
+                               name="disciplinas_selecionadas[]" 
+                               value="${disc.id}" 
+                               id="disc_${disc.id}">
+                        <label class="form-check-label w-100" for="disc_${disc.id}">
+                            <strong>${disc.nome}</strong>
+                            ${disc.codigo ? `<span class="badge bg-secondary ms-1">${disc.codigo}</span>` : ''}
+                            ${disc.carga_horaria_padrao ? `<br><small class="text-muted">CH: ${disc.carga_horaria_padrao}h</small>` : ''}
+                        </label>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Adicionar listener para atualizar contador E salvar
+        document.querySelectorAll('#listaDisciplinas .disciplina-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                atualizarContador();
+                salvarFormularioBanco(); // Auto-save ao marcar/desmarcar disciplina
+            });
+        });
+    }
+
+    function selecionarTodas() {
+        document.querySelectorAll('#listaDisciplinas .disciplina-checkbox').forEach(cb => cb.checked = true);
+        atualizarContador();
+        salvarFormularioBanco(); // Salvar após selecionar todas
+    }
+
+    function desmarcarTodas() {
+        document.querySelectorAll('#listaDisciplinas .disciplina-checkbox').forEach(cb => cb.checked = false);
+        atualizarContador();
+        salvarFormularioBanco(); // Salvar após desmarcar todas
+    }
+
+    function atualizarContador(anoId) {
+        let total = 0;
+        if (anoId) {
+            const lista = document.getElementById(`listaDisciplinas_${anoId}`);
+            if (lista) {
+                total = lista.querySelectorAll('.disciplina-checkbox:checked').length;
+            }
+        } else {
+            total = document.querySelectorAll('#listaDisciplinas .disciplina-checkbox:checked').length;
+        }
+        const elemId = anoId ? `total-selecionadas-${anoId}` : 'total-selecionadas-geral';
+        const elem = document.getElementById(elemId);
+        if (elem) elem.textContent = total;
+    }
+    
+    // ========================================
+    // FUNÇÃO SIMPLIFICADA - ADICIONAR NOVA DISCIPLINA
+    // ========================================
+    
+    function salvarNovaDisciplinaSimples(anoId) {
+        console.log('💾 salvarNovaDisciplinaSimples INICIADA para ano:', anoId);
+        
+        const nomeInput = document.getElementById(`novaDisciplinaNome_${anoId}`);
+        const nome = nomeInput.value.trim();
+        
+        console.log('Dados:', {nome});
+        
+        if (!nome) {
+            alert('Por favor, preencha o nome da disciplina');
+            nomeInput.focus();
+            return;
+        }
+        
+        // Desabilitar botão e mostrar loading
+        const btnSalvar = event.target;
+        const textoOriginal = btnSalvar.innerHTML;
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
+        
+        // Salvar no banco
+        fetch('/disciplinas/cadastrar_rapido', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                nome: nome,
+                codigo: '',
+                carga_horaria_padrao: null,
+                ano_inicio: 1960,
+                ano_fim: 2030
+            })
+        })
+        .then(response => {
+            console.log('Resposta:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Resultado:', data);
+            
+            if (data.success) {
+                // Garantir que array existe
+                if (!disciplinasSelecionadasPorAno[anoId]) {
+                    disciplinasSelecionadasPorAno[anoId] = [];
+                }
+                
+                // Adicionar ao array
+                disciplinasSelecionadasPorAno[anoId].push({
+                    id: data.disciplina_id,
+                    nome: nome,
+                    codigo: '',
+                    carga_horaria: null
+                });
+                
+                console.log('✅ Disciplina adicionada! Total:', disciplinasSelecionadasPorAno[anoId].length);
+                
+                // Atualizar lista visual
+                atualizarListaDisciplinasSelecionadas(anoId);
+                
+                // Limpar campo
+                nomeInput.value = '';
+                
+                // Mostrar mensagem de sucesso
+                alert('✅ Disciplina "' + nome + '" salva e adicionada ao histórico!');
+                
+                // Restaurar botão
+                btnSalvar.disabled = false;
+                btnSalvar.innerHTML = textoOriginal;
+                
+                // Focar no campo nome
+                nomeInput.focus();
+            } else {
+                alert('❌ Erro: ' + data.message);
+                btnSalvar.disabled = false;
+                btnSalvar.innerHTML = textoOriginal;
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('❌ Erro ao salvar: ' + error.message);
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = textoOriginal;
+        });
+    }
+    
+    // ========================================
+    // AUTOCOMPLETE DE DISCIPLINAS POR ANO
+    // ========================================
+    
+    // Armazena disciplinas selecionadas por ano
+    const disciplinasSelecionadasPorAno = {};
+    
+    function configurarAutocompleteDisciplina(anoId) {
+        const input = document.getElementById(`autocompleteDisciplina_${anoId}`);
+        const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+        
+        if (!input || !sugestoesDiv) return;
+        
+        // Inicializar array de disciplinas selecionadas
+        if (!disciplinasSelecionadasPorAno[anoId]) {
+            disciplinasSelecionadasPorAno[anoId] = [];
+        }
+        
+        let timeoutBusca;
+        
+        // Buscar ao digitar
+        input.addEventListener('input', function() {
+            const termo = this.value.trim();
+            
+            clearTimeout(timeoutBusca);
+            
+            if (termo.length < 2) {
+                sugestoesDiv.style.display = 'none';
+                return;
+            }
+            
+            timeoutBusca = setTimeout(() => {
+                fetch(`/disciplinas/api/buscar?termo=${encodeURIComponent(termo)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarSugestoes(anoId, data.disciplinas);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar disciplinas:', error);
+                    });
+            }, 300);
+        });
+        
+        // Fechar sugestões ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !sugestoesDiv.contains(e.target)) {
+                sugestoesDiv.style.display = 'none';
+            }
+        });
+    }
+    
+    function mostrarSugestoes(anoId, disciplinas) {
+        const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+        
+        if (disciplinas.length === 0) {
+            sugestoesDiv.innerHTML = `
+                <div class="list-group-item text-muted">
+                    <i class="bi bi-exclamation-circle"></i> Nenhuma disciplina encontrada
+                </div>
+            `;
+            sugestoesDiv.style.display = 'block';
+            return;
+        }
+        
+        let html = '';
+        disciplinas.forEach(disc => {
+            // Verificar se já foi adicionada
+            const jaAdicionada = disciplinasSelecionadasPorAno[anoId] && 
+                                 disciplinasSelecionadasPorAno[anoId].some(d => d.id === disc.id);
+            
+            html += `
+                <a href="#" class="list-group-item list-group-item-action ${jaAdicionada ? 'disabled bg-light' : ''}" 
+                   onclick="adicionarDisciplinaAoAno(${anoId}, ${disc.id}, '${disc.nome.replace(/'/g, "\\'")}', '${disc.codigo || ''}', ${disc.carga_horaria_padrao || 0}); return false;">
+                    <strong>${disc.nome}</strong>
+                    ${disc.codigo ? `<span class="badge bg-secondary ms-2">${disc.codigo}</span>` : ''}
+                    ${jaAdicionada ? `<span class="badge bg-success ms-2">✓ Já adicionada</span>` : ''}
+                </a>
+            `;
+        });
+        
+        sugestoesDiv.innerHTML = html;
+        sugestoesDiv.style.display = 'block';
+    }
+    
+    function mostrarFormularioNovaDisciplina(anoId, nomeInicial) {
+        console.log('🔧 mostrarFormularioNovaDisciplina chamada:', {anoId, nomeInicial});
+        
+        const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+        
+        if (!sugestoesDiv) {
+            console.error('❌ Container sugestoesDisciplinas não encontrado para ano:', anoId);
+            return;
+        }
+        
+        console.log('✅ Container encontrado, gerando formulário...');
+        
+        sugestoesDiv.innerHTML = `
+            <div class="list-group-item">
+                <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Nova Disciplina</h6>
+                <div class="mb-2">
+                    <label class="form-label form-label-sm">Nome da Disciplina *</label>
+                    <input type="text" class="form-control form-control-sm" id="novaDisciplinaNome_${anoId}" 
+                           value="${nomeInicial}" placeholder="Ex: Geografia">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label form-label-sm">Código (opcional)</label>
+                    <input type="text" class="form-control form-control-sm" id="novaDisciplinaCodigo_${anoId}" 
+                           placeholder="Ex: GEO">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label form-label-sm">Carga Horária (opcional)</label>
+                    <input type="number" class="form-control form-control-sm" id="novaDisciplinaCH_${anoId}" 
+                           placeholder="60" value="60">
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm" onclick="salvarNovaDisciplina(${anoId})">
+                        <i class="bi bi-save"></i> Salvar e Adicionar
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarNovaDisciplina(${anoId})">
+                        <i class="bi bi-x"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        sugestoesDiv.style.display = 'block';
+        
+        // Focar no campo nome
+        setTimeout(() => {
+            const inputNome = document.getElementById(`novaDisciplinaNome_${anoId}`);
+            if (inputNome) inputNome.focus();
+        }, 100);
+    }
+    
+    function salvarNovaDisciplina(anoId) {
+        console.log('💾 salvarNovaDisciplina INICIADA para ano:', anoId);
+        
+        const nomeInput = document.getElementById(`novaDisciplinaNome_${anoId}`);
+        const codigoInput = document.getElementById(`novaDisciplinaCodigo_${anoId}`);
+        const chInput = document.getElementById(`novaDisciplinaCH_${anoId}`);
+        
+        console.log('Inputs encontrados?', {
+            nome: nomeInput !== null,
+            codigo: codigoInput !== null,
+            ch: chInput !== null
+        });
+        
+        if (!nomeInput) {
+            console.error('❌ Input de nome não encontrado!');
+            alert('Erro: campo de nome não encontrado');
+            return;
+        }
+        
+        const nome = nomeInput.value.trim();
+        const codigo = codigoInput ? codigoInput.value.trim() : '';
+        const cargaHoraria = chInput ? (parseInt(chInput.value) || 60) : 60;
+        
+        console.log('💾 Dados coletados:', {anoId, nome, codigo, cargaHoraria});
+        
+        if (!nome) {
+            alert('O nome da disciplina é obrigatório');
+            return;
+        }
+        
+        // Mostrar loading
+        const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+        sugestoesDiv.innerHTML = `
+            <div class="list-group-item text-center">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <span class="ms-2">Salvando disciplina...</span>
+            </div>
+        `;
+        
+        // Salvar no banco via AJAX
+        fetch('/disciplinas/cadastrar_rapido', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                nome: nome,
+                codigo: codigo,
+                carga_horaria_padrao: cargaHoraria,
+                ano_inicio: 1960,
+                ano_fim: 2030
+            })
+        })
+        .then(response => {
+            console.log('Resposta recebida:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Dados recebidos:', data);
+            
+            if (data.success) {
+                console.log('Disciplina salva com sucesso! ID:', data.disciplina_id);
+                
+                // Fechar o formulário primeiro
+                const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+                if (sugestoesDiv) sugestoesDiv.style.display = 'none';
+                
+                // Limpar campo de busca
+                const input = document.getElementById(`autocompleteDisciplina_${anoId}`);
+                if (input) input.value = '';
+                
+                // FORÇAR adição da disciplina à lista
+                console.log('Forçando adição da disciplina...');
+                
+                // Garantir que o array existe
+                if (!disciplinasSelecionadasPorAno[anoId]) {
+                    disciplinasSelecionadasPorAno[anoId] = [];
+                    console.log('Array criado para anoId:', anoId);
+                }
+                
+                // Adicionar disciplina
+                disciplinasSelecionadasPorAno[anoId].push({
+                    id: data.disciplina_id,
+                    nome: nome,
+                    codigo: codigo,
+                    carga_horaria: cargaHoraria
+                });
+                
+                console.log('Disciplina adicionada! Array atual:', disciplinasSelecionadasPorAno[anoId]);
+                
+                // Atualizar lista visual
+                atualizarListaDisciplinasSelecionadas(anoId);
+                
+                // Feedback visual
+                const container = document.getElementById(`disciplinasSelecionadas_${anoId}`);
+                if (container) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show mb-2';
+                    alert.innerHTML = `
+                        <i class="bi bi-check-circle"></i> <strong>Sucesso!</strong> Disciplina "${nome}" salva no banco e adicionada ao histórico!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    container.insertBefore(alert, container.firstChild);
+                    
+                    setTimeout(() => alert.remove(), 5000);
+                }
+            } else {
+                alert('Erro ao salvar disciplina: ' + data.message);
+                cancelarNovaDisciplina(anoId);
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao salvar disciplina:', error);
+            alert('Erro ao salvar disciplina: ' + error.message);
+            cancelarNovaDisciplina(anoId);
+        });
+    }
+    
+    function cancelarNovaDisciplina(anoId) {
+        const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+        sugestoesDiv.style.display = 'none';
+        
+        const input = document.getElementById(`autocompleteDisciplina_${anoId}`);
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    }
+    
+    function adicionarDisciplinaAoAno(anoId, disciplinaId, nome, codigo, cargaHoraria) {
+        console.log('adicionarDisciplinaAoAno chamada:', {anoId, disciplinaId, nome, codigo, cargaHoraria});
+        
+        // Garantir que o array existe
+        if (!disciplinasSelecionadasPorAno[anoId]) {
+            disciplinasSelecionadasPorAno[anoId] = [];
+        }
+        
+        // Verificar se já foi adicionada
+        if (disciplinasSelecionadasPorAno[anoId].some(d => d.id === disciplinaId)) {
+            console.log('Disciplina já adicionada, ignorando');
+            return;
+        }
+        
+        // Adicionar ao array
+        disciplinasSelecionadasPorAno[anoId].push({
+            id: disciplinaId,
+            nome: nome,
+            codigo: codigo,
+            carga_horaria: cargaHoraria
+        });
+        
+        console.log('Disciplina adicionada ao array:', disciplinasSelecionadasPorAno[anoId]);
+        
+        // Limpar campo de busca
+        const input = document.getElementById(`autocompleteDisciplina_${anoId}`);
+        if (input) input.value = '';
+        
+        // Esconder sugestões
+        const sugestoesDiv = document.getElementById(`sugestoesDisciplinas_${anoId}`);
+        if (sugestoesDiv) sugestoesDiv.style.display = 'none';
+        
+        // Atualizar lista visual
+        atualizarListaDisciplinasSelecionadas(anoId);
+        
+        console.log('Lista de disciplinas atualizada visualmente');
+    }
+    
+    function removerDisciplinaDoAno(anoId, disciplinaId) {
+        disciplinasSelecionadasPorAno[anoId] = disciplinasSelecionadasPorAno[anoId].filter(d => d.id !== disciplinaId);
+        atualizarListaDisciplinasSelecionadas(anoId);
+    }
+    
+    function atualizarListaDisciplinasSelecionadas(anoId) {
+        console.log('🔄 atualizarListaDisciplinasSelecionadas chamada para ano:', anoId);
+        
+        const container = document.getElementById(`disciplinasSelecionadas_${anoId}`);
+        const disciplinas = disciplinasSelecionadasPorAno[anoId] || [];
+        
+        if (disciplinas.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-info alert-sm">
+                    <i class="bi bi-info-circle"></i> Nenhuma disciplina adicionada ainda. Digite acima para buscar.
+                </div>
+            `;
+            return;
+        }
+        
+        // Salvar notas existentes antes de reconstruir
+        const notasAntigas = {};
+        container.querySelectorAll('.nota-input').forEach(input => {
+            const notaId = input.id;
+            const nota = input.value;
+            if (nota) {
+                notasAntigas[notaId] = nota;
+                console.log('💾 Salvando nota:', notaId, '=', nota);
+            }
+        });
+        
+        console.log('📝 Notas salvas:', notasAntigas);
+        
+        let html = `
+            <div class="alert alert-success alert-sm mb-2">
+                <i class="bi bi-check-circle"></i> <strong>${disciplinas.length}</strong> disciplinas adicionadas
+            </div>
+            <div class="row g-2">
+        `;
+        
+        disciplinas.forEach(disc => {
+            // Recuperar nota anterior se existir
+            const notaAnterior = notasAntigas[`nota_${anoId}_${disc.id}`] || '';
+            
+            html += `
+                <div class="col-md-12 mb-2">
+                    <div class="card card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <div class="flex-grow-1">
+                                <strong>${disc.nome.toUpperCase()}</strong>
+                                ${disc.codigo ? `<span class="badge bg-secondary ms-1">${disc.codigo}</span>` : ''}
+                                <input type="hidden" name="anos[${anoId}][disciplinas][${disc.id}][id]" value="${disc.id}">
+                            </div>
+                            <div style="width: 120px;">
+                                <input type="text" 
+                                       class="form-control form-control-sm text-center nota-input" 
+                                       name="anos[${anoId}][disciplinas][${disc.id}][nota]" 
+                                       placeholder="Nota"
+                                       maxlength="4"
+                                       id="nota_${anoId}_${disc.id}"
+                                       value="${notaAnterior}"
+                                       onchange="validarNota(this)"
+                                       oninput="filtrarCaracteresNota(this)"
+                                       title="Digite: nota de 0.0 a 10.0, A, P, PD, EV ou AB">
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="removerDisciplinaDoAno(${anoId}, ${disc.id})"
+                                    title="Remover disciplina">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
+    function finalizarAno(anoId) {
+        const disciplinas = disciplinasSelecionadasPorAno[anoId] || [];
+        
+        if (disciplinas.length === 0) {
+            alert('Adicione pelo menos uma disciplina antes de finalizar este ano.');
+            const input = document.getElementById(`autocompleteDisciplina_${anoId}`);
+            if (input) input.focus();
+            return;
+        }
+        
+        // Pegar o ano do campo atual
+        const anoInput = document.querySelector(`input[data-ano-id="${anoId}"].ano-input`);
+        const anoAtual = anoInput ? parseInt(anoInput.value) : null;
+        
+        // Clonar disciplinas para o próximo ano (SEM notas)
+        const disciplinasClonadas = disciplinas.map(disc => ({
+            id: disc.id,
+            nome: disc.nome,
+            codigo: disc.codigo,
+            carga_horaria: disc.carga_horaria
+            // Nota NÃO é clonada propositalmente
+        }));
+        
+        // Adicionar próximo ano
+        adicionarAnoLetivo();
+        
+        // Adicionar as disciplinas clonadas ao novo ano
+        const novoAnoId = contadorAnos;
+        disciplinasSelecionadasPorAno[novoAnoId] = disciplinasClonadas;
+        
+        // Incrementar o ano se foi preenchido
+        setTimeout(() => {
+            if (anoAtual) {
+                const novoAnoInput = document.querySelector(`input[data-ano-id="${novoAnoId}"].ano-input`);
+                if (novoAnoInput) {
+                    novoAnoInput.value = anoAtual + 1;
+                }
+            }
+            
+            // Atualizar lista visual do novo ano
+            atualizarListaDisciplinasSelecionadas(novoAnoId);
+            
+            // Scroll suave para o novo ano
+            const proximoAno = document.querySelector('.card-ano-letivo:last-child');
+            if (proximoAno) {
+                proximoAno.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+    }
+    
+    // Expor funções globalmente
+    window.removerAnoLetivo = removerAnoLetivo;
+    window.adicionarDisciplinaAoAno = adicionarDisciplinaAoAno;
+    window.removerDisciplinaDoAno = removerDisciplinaDoAno;
+    window.finalizarAno = finalizarAno;
+    window.salvarNovaDisciplinaSimples = salvarNovaDisciplinaSimples;
+    
+    // Filtrar caracteres inválidos durante digitação
+    window.filtrarCaracteresNota = function(input) {
+        // Permitir apenas: números, ponto, vírgula, espaço e letras A, B, D, E, P, V
+        let valor = input.value.toUpperCase();
+        valor = valor.replace(/[^0-9.,ABDEPV\s]/g, '');
+        input.value = valor;
+    };
+    
+    // Validar nota: 0.0 a 10.0, A, P, PD, EV ou AB
+    window.validarNota = function(input) {
+        let valor = input.value.trim().toUpperCase();
+        
+        // Se vazio, permitir
+        if (!valor) {
+            input.classList.remove('is-invalid', 'is-valid');
+            return;
+        }
+        
+        // Aceitar códigos especiais
+        const codigosValidos = ['A', 'P', 'PD', 'EV', 'AB'];
+        if (codigosValidos.includes(valor)) {
+            input.value = valor;
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+            return;
+        }
+        
+        // Substituir vírgula por ponto
+        valor = valor.replace(',', '.');
+        
+        // Validar se é número
+        const nota = parseFloat(valor);
+        
+        if (isNaN(nota) || nota < 0 || nota > 10) {
+            input.classList.add('is-invalid');
+            input.classList.remove('is-valid');
+            alert('Nota inválida! Digite:\n• Valor entre 0.0 e 10.0\n• A (aprovado)\n• P (parecer)\n• PD (parecer descritivo)\n• EV (evadido)\n• AB (abandono)');
+            input.focus();
+            input.select();
+        } else {
+            // Formatar para 1 casa decimal
+            input.value = nota.toFixed(1);
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+        }
+        
+        // Auto-save ao mudar nota (no banco E no localStorage)
+        salvarFormularioBanco();
+    };
+    
+    // ===== ATIVAR AUTO-SAVE NO BANCO =====
+    // Salvar ao mudar campos principais
+    ['nivel', 'aluno_id', 'escola_origem', 'municipio_origem', 'observacoes'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', () => {
+                salvarFormularioBanco(); // Salva no banco
+            });
+        }
+    });
+    
+    // Auto-save periódico NO BANCO
+    setInterval(salvarFormularioBanco, AUTO_SAVE_INTERVAL);
+    
+    // Verificar se há dados salvos ao carregar a página
+    setTimeout(() => {
+        const dadosSalvos = recuperarFormularioLocalStorage();
+        if (dadosSalvos && dadosSalvos.nivel) {
+            mostrarNotificacaoRecuperacao(dadosSalvos);
+        }
+    }, 1000);
+
+}); // Fechar DOMContentLoaded
+</script>
+
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

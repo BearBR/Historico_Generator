@@ -21,6 +21,32 @@ def por_ano(ano):
     
     return render_template('disciplinas/por_ano.html', disciplinas=disciplinas, ano=ano)
 
+@bp.route('/api/buscar')
+def buscar_disciplinas():
+    """API: Busca disciplinas por nome ou código"""
+    termo = request.args.get('termo', '').strip()
+    
+    if len(termo) < 2:
+        return jsonify({'disciplinas': []})
+    
+    # Buscar disciplinas que contenham o termo
+    disciplinas = DisciplinaHistorica.query.filter(
+        DisciplinaHistorica.ativa == True,
+        db.or_(
+            DisciplinaHistorica.nome.ilike(f'%{termo}%'),
+            DisciplinaHistorica.codigo.ilike(f'%{termo}%')
+        )
+    ).order_by(DisciplinaHistorica.nome).limit(20).all()
+    
+    return jsonify({
+        'disciplinas': [{
+            'id': d.id,
+            'nome': d.nome,
+            'codigo': d.codigo,
+            'carga_horaria_padrao': d.carga_horaria_padrao
+        } for d in disciplinas]
+    })
+
 @bp.route('/api/carregar-grade')
 def carregar_grade():
     """API: Carrega automaticamente grade curricular por ano, modalidade e nível"""
@@ -28,23 +54,13 @@ def carregar_grade():
     modalidade = request.args.get('modalidade', 'Regular')
     nivel = request.args.get('nivel', 'Fundamental')
     
-    # Buscar TODAS as disciplinas ativas (temporariamente sem filtro de modalidade)
+    # Buscar TODAS as disciplinas ativas
     disciplinas = DisciplinaHistorica.query.filter(
         DisciplinaHistorica.ano_inicio <= ano,
         DisciplinaHistorica.ativa == True
     ).filter(
         db.or_(DisciplinaHistorica.ano_fim.is_(None), DisciplinaHistorica.ano_fim >= ano)
-    ).order_by(DisciplinaHistorica.nome).limit(50).all()
-    
-    return jsonify({
-        'disciplinas': [{
-            'id': d.id,
-            'nome': d.nome,
-            'codigo': d.codigo,
-            'carga_horaria_padrao': d.carga_horaria_padrao,
-            'serie': d.serie
-        } for d in disciplinas]
-    })
+    ).order_by(DisciplinaHistorica.nome).all()
     
     # Filtrar por palavras-chave do nível e modalidade
     disciplinas_filtradas = []
@@ -119,4 +135,63 @@ def carregar_grade():
             'modalidade': modalidade,
             'nivel': nivel
         }
+    })
+
+@bp.route('/cadastrar_rapido', methods=['POST'])
+def cadastrar_rapido():
+    """Cadastra uma disciplina rapidamente via AJAX"""
+    try:
+        data = request.get_json()
+        nome = data.get('nome', '').strip()
+        nome_upper = nome.upper()
+        
+        if not nome:
+            return jsonify({'success': False, 'message': 'Nome da disciplina é obrigatório'}), 400
+        
+        # Verificar se já existe
+        disciplina_existente = DisciplinaHistorica.query.filter(
+            db.func.upper(DisciplinaHistorica.nome) == nome_upper,
+            DisciplinaHistorica.ativa == True
+        ).first()
+        if disciplina_existente:
+            return jsonify({
+                'success': True, 
+                'message': 'Disciplina já existe no sistema',
+                'disciplina_id': disciplina_existente.id
+            })
+        
+        # Criar nova disciplina com dados mínimos
+        disciplina = DisciplinaHistorica(
+            nome=nome_upper,
+            ano_inicio=data.get('ano_inicio', 1960),
+            ano_fim=data.get('ano_fim', 2003),
+            carga_horaria_padrao=data.get('carga_horaria_padrao', 60)
+        )
+        
+        db.session.add(disciplina)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Disciplina cadastrada com sucesso',
+            'disciplina_id': disciplina.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@bp.route('/api/todas')
+def todas_disciplinas():
+    """API: Retorna todas as disciplinas ativas"""
+    disciplinas = DisciplinaHistorica.query.filter_by(ativa=True).order_by(DisciplinaHistorica.nome).all()
+    return jsonify({
+        'disciplinas': [
+            {
+                'id': d.id,
+                'nome': d.nome,
+                'codigo': d.codigo,
+                'carga_horaria_padrao': d.carga_horaria_padrao
+            } for d in disciplinas
+        ]
     })

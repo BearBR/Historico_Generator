@@ -53,6 +53,11 @@
                                title="Visualizar">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            <a href="{{ url_for('historicos.lancar_notas', id=historico.id) }}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                             <a href="{{ url_for('historicos.gerar_pdf', id=historico.id) }}" 
                                class="btn btn-sm btn-outline-danger" 
                                title="Gerar PDF">

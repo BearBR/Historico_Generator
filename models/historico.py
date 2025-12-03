@@ -67,7 +67,10 @@ class HistoricoAnoLetivo(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     historico_id = db.Column(db.Integer, db.ForeignKey('historicos.id'), nullable=False)
-    escola_id = db.Column(db.Integer, db.ForeignKey('escolas.id'), nullable=False)
+    escola_id = db.Column(db.Integer, db.ForeignKey('escolas.id'), nullable=True)  # Agora pode ser NULL
+    escola_nome_manual = db.Column(db.String(255), nullable=True)  # Nome da escola digitado manualmente
+    escola_municipio_manual = db.Column(db.String(100), nullable=True)  # Município da escola manual
+    escola_estado_manual = db.Column(db.String(2), nullable=True)  # Estado da escola manual
     
     # Dados do Ano Letivo
     ano = db.Column(db.Integer, nullable=False)

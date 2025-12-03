@@ -214,6 +214,29 @@
             font-style: italic;
         }
 
+        .historico-coluna {
+            width: 49%;
+            float: left;
+            margin-bottom: 8px;
+        }
+
+        .historico-coluna-par {
+            margin-right: 2%;
+        }
+
+        .historico-res {
+            padding: 2px;
+            font-size: 8pt;
+        }
+
+        .historico-res-faltas {
+            width: 14%;
+        }
+
+        .historico-res-sem-faltas {
+            width: 28%;
+        }
+
         @media print {
             body {
                 print-color-adjust: exact;
@@ -223,24 +246,30 @@
     </style>
 </head>
 <body>
-    <!-- Cabeçalho - usa dados da primeira escola ou última -->
-    {% set primeira_escola = anos_letivos[0].escola if anos_letivos else None %}
-    {% if primeira_escola %}
+    <!-- Botão Voltar -->
+    <div style="margin-bottom: 20px;">
+        <button onclick="window.history.back()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            ← Voltar
+        </button>
+    </div>
+
+    <!-- Cabeçalho - usa ESCOLA EMISSORA (escola que está emitindo o documento) -->
+    {% if escola_emissora %}
     <div class="header-container">
-        {% if primeira_escola.logo %}
+        {% if escola_emissora.logo %}
         <div class="logo-escola">
-            <img src="/static/uploads/logos/{{ primeira_escola.logo }}" alt="Logo">
+            <img src="/static/uploads/logos/{{ escola_emissora.logo }}" alt="Logo">
         </div>
         {% endif %}
         
         <div class="header">
-            <p class="escola-nome">{{ primeira_escola.nome }}</p>
+            <p class="escola-nome">{{ escola_emissora.nome }}</p>
             <h1>Estado do Rio Grande do Sul</h1>
-            {% if primeira_escola.endereco %}
-            <p class="escola-info">{{ primeira_escola.endereco }} - {{ primeira_escola.municipio }}/{{ primeira_escola.estado }}{% if primeira_escola.telefone %} - Fone: {{ primeira_escola.telefone }}{% endif %}</p>
+            {% if escola_emissora.endereco %}
+            <p class="escola-info">{{ escola_emissora.endereco }} - {{ escola_emissora.municipio }}/{{ escola_emissora.estado }}{% if escola_emissora.telefone %} - Fone: {{ escola_emissora.telefone }}{% endif %}</p>
             {% endif %}
-            {% if primeira_escola.email %}
-            <p class="escola-info">{{ primeira_escola.email }}</p>
+            {% if escola_emissora.email %}
+            <p class="escola-info">{{ escola_emissora.email }}</p>
             {% endif %}
         </div>
     </div>
@@ -308,11 +337,13 @@
     <!-- Anos Letivos em 2 Colunas -->
     {% for ano_letivo in anos_letivos %}
         {% set is_par = loop.index0 % 2 == 1 %}
-        <div style="width: 49%; float: left; margin-bottom: 8px; {% if not is_par %}margin-right: 2%;{% endif %}">
+        <div class="historico-coluna {% if not is_par %}historico-coluna-par{% endif %}">
             <div class="ano-letivo-titulo" style="font-size: 9pt; padding: 2px 4px; margin-bottom: 2px;">
                 {{ ano_letivo.ano }} - {{ ano_letivo.serie }}
-                {% if ano_letivo.escola.nome != primeira_escola.nome %}
+                {% if ano_letivo.escola and ano_letivo.escola.nome != escola_emissora.nome %}
                 <br><span style="font-size: 7pt; font-weight: normal;">{{ ano_letivo.escola.nome }}</span>
+                {% elif ano_letivo.escola_nome_manual %}
+                <br><span style="font-size: 7pt; font-weight: normal;">{{ ano_letivo.escola_nome_manual }}</span>
                 {% endif %}
             </div>
 
@@ -331,7 +362,7 @@
                         {% if historico.exibir_faltas_frequencia %}
                         <th style="width: 14%; padding: 2px; font-size: 8pt;">Freq.</th>
                         {% endif %}
-                        <th style="width: {% if historico.exibir_faltas_frequencia %}14{% else %}28{% endif %}%; padding: 2px; font-size: 8pt;">Res.</th>
+                        <th class="historico-res {% if historico.exibir_faltas_frequencia %}historico-res-faltas{% else %}historico-res-sem-faltas{% endif %}" style="padding: 2px; font-size: 8pt;">Res.</th>
                     </tr>
                 </thead>
                 <tbody>

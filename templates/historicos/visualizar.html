@@ -61,7 +61,6 @@
                         -
                     {% endif %}
                 </p>
-                <p class="mb-1"><strong>Dias Letivos:</strong> {{ ano_letivo.dias_letivos or '-' }}</p>
                 <p class="mb-1"><strong>CH Total:</strong> {{ ano_letivo.carga_horaria_total or '-' }} horas</p>
             </div>
         </div>
@@ -131,16 +130,7 @@
         <h5 class="mb-0"><i class="bi bi-award"></i> Conclusão de Curso</h5>
     </div>
     <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Data de Conclusão:</strong> {{ historico.data_conclusao.strftime('%d/%m/%Y') if historico.data_conclusao else '-' }}</p>
-                <p><strong>Número do Certificado:</strong> {{ historico.numero_certificado or '-' }}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>Livro de Registro:</strong> {{ historico.livro_registro or '-' }}</p>
-                <p><strong>Folha de Registro:</strong> {{ historico.folha_registro or '-' }}</p>
-            </div>
-        </div>
+        <p><strong>Ano de Conclusão:</strong> {{ historico.data_conclusao.year if historico.data_conclusao else '-' }}</p>
     </div>
 </div>
 {% endif %}

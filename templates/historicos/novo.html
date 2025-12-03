@@ -7,6 +7,13 @@
     <div class="col-12">
         <h2><i class="bi bi-file-earmark-plus"></i> Criar Novo Histórico</h2>
         <hr>
+        <!-- Indicador de Auto-Save -->
+        <div class="alert alert-success" id="alertAutoSave" style="display:none;">
+            <i class="bi bi-cloud-check"></i> <strong>Auto-Save Ativado:</strong> 
+            Suas alterações são salvas automaticamente. 
+            Você pode sair e voltar a qualquer momento.
+            <span class="ms-3" id="ultimoSalvamento"></span>
+        </div>
     </div>
 </div>
 
@@ -84,53 +91,6 @@
         </div>
     </div>
 
-    <!-- Buscar Disciplinas (Sempre Visível) -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0">
-                <i class="bi bi-search"></i> Buscar e Selecionar Disciplinas
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-10">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="buscarDisciplina" 
-                               placeholder="Digite para buscar: geografia, matemática, história...">
-                        <button class="btn btn-outline-secondary" type="button" id="btnLimparBusca">
-                            <i class="bi bi-x-circle"></i> Limpar
-                        </button>
-                        <button class="btn btn-primary" type="button" id="btnProcurarDisciplina">
-                            <i class="bi bi-search"></i> Carregar Disciplinas
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="filtroAno">
-                        <option value="">Todos os Períodos</option>
-                        <option value="1960-1971">1960-1971</option>
-                        <option value="1971-1996">1971-1996</option>
-                        <option value="1996-2003">1996-2003</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div id="listaDisciplinas">
-                <div class="alert alert-info">
-                    <i class="bi bi-lightbulb"></i> <strong>Como usar:</strong>
-                    <ol class="mb-0 mt-2">
-                        <li>Selecione o <strong>Nível de Ensino</strong> (Passo 1)</li>
-                        <li>Clique em <strong>"Carregar Disciplinas"</strong></li>
-                        <li><strong>Marque as disciplinas</strong> que o aluno cursou</li>
-                        <li>Adicione os <strong>Anos Letivos</strong> abaixo</li>
-                        <li>Clique em <strong>"Avançar"</strong> para lançar notas</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Escola de Origem (Transferência) -->
     <div class="card mb-4">
         <div class="card-header bg-secondary text-white">
@@ -187,12 +147,118 @@
         </button>
     </div>
 </form>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
 let todasDisciplinas = [];
 let contadorAnos = 0;
+
+// ===== SISTEMA DE AUTO-SAVE =====
+let historicoIdAtual = null;
+let salvandoNoBanco = false;
+
+// Salvar dados do formulário NO BANCO DE DADOS
+async function salvarFormularioBanco() {
+    if (salvandoNoBanco) {
+        console.log('⏳ Salvamento já em progresso...');
+        return;
+    }
+    
+    try {
+        salvandoNoBanco = true;
+        
+        const nivel = document.getElementById('nivel')?.value;
+        const aluno_id = document.getElementById('aluno_id')?.value;
+        const modalidade_id = document.getElementById('modalidade_id')?.value;
+        
+        // Validar campos obrigatórios
+        if (!nivel || !aluno_id || !modalidade_id) {
+            console.log('⚠️ Campos obrigatórios não preenchidos ainda');
+            salvandoNoBanco = false;
+            return;
+        }
+        
+        // Coletar dados dos anos
+        const anos = [];
+        document.querySelectorAll('.ano-input').forEach((anoInput) => {
+            const anoId = anoInput.dataset.anoId;
+            const serieSelect = document.querySelector(`select.serie-select[data-ano-id="${anoId}"]`);
+            const escolaSelect = document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`);
+            
+            if (anoInput.value && serieSelect?.value && escolaSelect?.value) {
+                // Coletar disciplinas deste ano
+                const disciplinasDoAno = [];
+                const containerDisc = document.getElementById(`disciplinasAdicionadas_${anoId}`);
+                
+                if (containerDisc) {
+                    containerDisc.querySelectorAll('[id^="disc_add_"]').forEach(div => {
+                        const inputDiscId = div.querySelector('input[name*="[disciplina_id]"]');
+                        const inputNota = div.querySelector('.nota-input');
+                        
+                        if (inputDiscId) {
+                            disciplinasDoAno.push({
+                                disciplina_id: parseInt(inputDiscId.value),
+                                nota: inputNota?.value || null
+                            });
+                        }
+                    });
+                }
+                
+                anos.push({
+                    ano: parseInt(anoInput.value),
+                    serie: serieSelect.value,
+                    escola_id: parseInt(escolaSelect.value),
+                    disciplinas: disciplinasDoAno
+                });
+            }
+        });
+        
+        const dadosFormulario = {
+            historico_id: historicoIdAtual,
+            aluno_id: parseInt(aluno_id),
+            modalidade_id: parseInt(modalidade_id),
+            nivel: nivel,
+            anos: anos
+        };
+        
+        console.log('📤 Enviando para auto-save:', dadosFormulario);
+        
+        const response = await fetch('/historicos/auto-save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dadosFormulario)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            historicoIdAtual = data.historico_id;
+            console.log('✅ Auto-save concluído! ID:', historicoIdAtual);
+            
+            // Mostrar indicador de auto-save
+            const alertAutoSave = document.getElementById('alertAutoSave');
+            const spanUltimoSalvamento = document.getElementById('ultimoSalvamento');
+            
+            if (alertAutoSave) {
+                alertAutoSave.style.display = 'block';
+                const agora = new Date();
+                const hora = agora.toLocaleTimeString('pt-BR');
+                spanUltimoSalvamento.innerHTML = `<small class="text-muted">Último salvamento: ${hora}</small>`;
+            }
+        } else {
+            console.error('❌ Erro no auto-save:', data.message);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar:', error);
+    } finally {
+        salvandoNoBanco = false;
+    }
+}
 
 // Aguardar o DOM carregar
 document.addEventListener('DOMContentLoaded', function() {
@@ -219,6 +285,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         console.log('Modalidade definida:', modalidadeInput.value);
+        
+        salvarFormularioBanco(); // Auto-save ao mudar nível
         
         // Definir séries baseadas no nível
         let seriesDisponiveis = [];
@@ -254,6 +322,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Adicionar primeiro ano automaticamente
         adicionarAnoLetivo();
     });
+    
+    // Listener no aluno para auto-save
+    document.getElementById('aluno_id').addEventListener('change', function() {
+        salvarFormularioBanco();
+    });
+
+    // Auto-save periódico a cada 30 segundos
+    setInterval(function() {
+        const aluno_id = document.getElementById('aluno_id')?.value;
+        if (aluno_id) {
+            console.log('⏰ Auto-save periódico (30s)');
+            salvarFormularioBanco();
+        }
+    }, 30000);
 
     // Botão adicionar ano
     document.getElementById('btnAdicionarAno').addEventListener('click', adicionarAnoLetivo);
@@ -267,9 +349,9 @@ document.addEventListener('DOMContentLoaded', function() {
         anoCard.className = 'card mb-3';
         anoCard.id = `anoCard_${contadorAnos}`;
         anoCard.innerHTML = `
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
             <strong><i class="bi bi-calendar3"></i> Ano Letivo #${contadorAnos}</strong>
-            ${contadorAnos > 1 ? `<button type="button" class="btn btn-sm btn-danger" onclick="removerAnoLetivo(${contadorAnos})">
+            ${contadorAnos > 1 ? `<button type="button" class="btn btn-sm btn-light" onclick="removerAnoLetivo(${contadorAnos})">
                 <i class="bi bi-trash"></i> Remover
             </button>` : ''}
         </div>
@@ -306,15 +388,103 @@ document.addEventListener('DOMContentLoaded', function() {
                     </select>
                 </div>
             </div>
+            
+            <hr class="my-3">
+            
+            <!-- Buscar Disciplinas para este ano -->
+            <div class="mb-3">
+                <label class="form-label fw-bold text-success">
+                    <i class="bi bi-book"></i> Disciplinas Cursadas
+                </label>
+                <div class="input-group mb-2">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control buscar-disciplina-ano" 
+                           placeholder="Digite para buscar: matemática, português..." 
+                           data-ano-id="${contadorAnos}"
+                           autocomplete="off">
+                    <button class="btn btn-primary btn-carregar-disciplinas" type="button" data-ano-id="${contadorAnos}">
+                        <i class="bi bi-list"></i> Ver Todas
+                    </button>
+                    <button class="btn btn-success btn-nova-disciplina" type="button" data-ano-id="${contadorAnos}">
+                        <i class="bi bi-plus-circle"></i> Nova
+                    </button>
+                </div>
+                
+                <!-- Autocomplete customizado -->
+                <div id="autocomplete_${contadorAnos}" class="autocomplete-suggestions" style="display:none;"></div>
+                
+                <!-- Disciplinas adicionadas -->
+                <div id="disciplinasAdicionadas_${contadorAnos}" class="mt-3">
+                    <!-- Disciplinas com notas aparecerão aqui -->
+                </div>
+                
+                <!-- Lista para seleção (oculta inicialmente) -->
+                <div id="listaDisciplinas_${contadorAnos}" class="lista-disciplinas-ano mt-2" style="display:none;">
+                </div>
+            </div>
         </div>
     `;
     
         container.appendChild(anoCard);
         
-        // Adicionar listeners para verificar preenchimento
-        anoCard.querySelector('.ano-input').addEventListener('change', verificarAnosPreenchidos);
-        anoCard.querySelector('.serie-select').addEventListener('change', verificarAnosPreenchidos);
-        anoCard.querySelector('.escola-select').addEventListener('change', verificarAnosPreenchidos);
+        // Adicionar listeners
+        const anoInput = anoCard.querySelector('.ano-input');
+        const serieSelect = anoCard.querySelector('.serie-select');
+        const escolaSelect = anoCard.querySelector('.escola-select');
+        const btnCarregar = anoCard.querySelector('.btn-carregar-disciplinas');
+        const btnNova = anoCard.querySelector('.btn-nova-disciplina');
+        const inputBusca = anoCard.querySelector('.buscar-disciplina-ano');
+        
+        anoInput.addEventListener('change', () => { verificarAnosPreenchidos(); salvarFormularioBanco(); });
+        serieSelect.addEventListener('change', () => { verificarAnosPreenchidos(); salvarFormularioBanco(); });
+        escolaSelect.addEventListener('change', () => { verificarAnosPreenchidos(); salvarFormularioBanco(); });
+        
+        // Carregar disciplinas
+        btnCarregar.addEventListener('click', () => carregarTodasDisciplinasAno(contadorAnos));
+        
+        // Nova disciplina
+        btnNova.addEventListener('click', () => abrirModalNovaDisciplina(contadorAnos));
+        
+        // Autocomplete ao digitar
+        inputBusca.addEventListener('input', function() {
+            const termo = this.value.trim();
+            const anoId = this.dataset.anoId;
+            
+            console.log('Digitando:', termo, 'Tamanho:', termo.length);
+            
+            if (termo.length >= 2) {
+                console.log('Carregando sugestões para:', termo);
+                carregarSugestoesCustomizadas(anoId, termo, this);
+            } else {
+                // Ocultar sugestões
+                document.getElementById(`autocomplete_${anoId}`).style.display = 'none';
+            }
+        });
+        
+        // Ao pressionar Enter
+        inputBusca.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const termo = this.value.trim();
+                const anoId = this.dataset.anoId;
+                
+                if (termo) {
+                    console.log('Enter pressionado - adicionando:', termo);
+                    adicionarDisciplinaPorNome(anoId, termo);
+                    this.value = '';
+                    document.getElementById(`autocomplete_${anoId}`).style.display = 'none';
+                }
+            }
+        });
+        
+        // Fechar sugestões ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.buscar-disciplina-ano') && !e.target.closest('.autocomplete-suggestions')) {
+                document.querySelectorAll('.autocomplete-suggestions').forEach(div => {
+                    div.style.display = 'none';
+                });
+            }
+        });
         
         verificarAnosPreenchidos();
     }
@@ -330,7 +500,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Verificar se pelo menos um ano está preenchido
     function verificarAnosPreenchidos() {
-        // Esta função agora apenas valida - não precisa mais mostrar/ocultar card de disciplinas
         const anosInputs = document.querySelectorAll('.ano-input');
         const seriesSelects = document.querySelectorAll('.serie-select');
         const escolasSelects = document.querySelectorAll('.escola-select');
@@ -344,224 +513,342 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Apenas retorna se está preenchido (para uso futuro se necessário)
         return algumPreenchido;
     }
-
-    // Atualizar seções de disciplinas para cada ano (mantida para compatibilidade)
-    function atualizarDisciplinasPorAno() {
-        // Função desativada - disciplinas agora são selecionadas globalmente
-        return;
-    }
-
-    // Buscar disciplina por nome
-    const inputBuscar = document.getElementById('buscarDisciplina');
-    if (inputBuscar) {
-        inputBuscar.addEventListener('input', function() {
-            const termo = this.value.toLowerCase().trim();
-            console.log('Buscando por:', termo, '| Total disciplinas carregadas:', todasDisciplinas.length);
-            
-            if (termo.length >= 2) {
-                const disciplinasFiltradas = todasDisciplinas.filter(d => 
-                    d.nome.toLowerCase().includes(termo) || 
-                    (d.codigo && d.codigo.toLowerCase().includes(termo))
-                );
-                console.log('Disciplinas filtradas:', disciplinasFiltradas.length);
-                exibirDisciplinas(disciplinasFiltradas);
-            } else if (termo.length === 0) {
-                console.log('Termo vazio, exibindo todas');
-                exibirDisciplinas(todasDisciplinas);
-            }
-        });
-    }
-
-    // Filtro por período
-    const filtroAno = document.getElementById('filtroAno');
-    if (filtroAno) {
-        filtroAno.addEventListener('change', function() {
-            const periodo = this.value;
-            
-            if (!periodo) {
-                exibirDisciplinas(todasDisciplinas);
-                return;
-            }
-            
-            const [anoInicio, anoFim] = periodo.split('-').map(Number);
-            const disciplinasFiltradas = todasDisciplinas.filter(d => {
-                if (!d.ano_inicio) return false;
-                
-                if (anoFim) {
-                    return d.ano_inicio >= anoInicio && d.ano_inicio <= anoFim;
-                } else {
-                    return d.ano_inicio >= anoInicio;
-                }
-            });
-            
-            exibirDisciplinas(disciplinasFiltradas);
-        });
-    }
-
-    // Limpar busca
-    const btnLimpar = document.getElementById('btnLimparBusca');
-    if (btnLimpar) {
-        btnLimpar.addEventListener('click', function() {
-            console.log('Botão Limpar clicado');
-            document.getElementById('buscarDisciplina').value = '';
-            document.getElementById('filtroAno').value = '';
-            console.log('Exibindo todas as disciplinas:', todasDisciplinas.length);
-            exibirDisciplinas(todasDisciplinas);
-        });
-    }
-
-    // Botão Procurar Disciplina - carregar disciplinas e focar na busca
-    const btnProcurar = document.getElementById('btnProcurarDisciplina');
-    if (btnProcurar) {
-        btnProcurar.addEventListener('click', function() {
-            console.log('Botão Procurar Disciplina clicado!');
-            const nivelOriginal = document.getElementById('nivel').value;
-            const modalidadeId = document.getElementById('modalidade_id').value;
-            
-            console.log('Nível:', nivelOriginal, 'Modalidade ID:', modalidadeId);
-            
-            if (!nivelOriginal) {
-                alert('Por favor, escolha primeiro o Nível de Ensino');
-                document.getElementById('nivel').focus();
-                return;
-            }
-            
-            // Carregar todas as disciplinas do nível selecionado (ano 1980 como padrão)
-            const modalidadeNomes = {'1': 'Regular', '2': 'Supletivo', '3': 'EJA'};
-            const modalidade = modalidadeNomes[modalidadeId] || 'Regular';
-            const nivel = nivelOriginal.includes('Fundamental') ? 'Fundamental' : 'Médio';
-            
-            const url = `/disciplinas/api/carregar-grade?ano=1980&modalidade=${modalidade}&nivel=${nivel}`;
-            console.log('URL da API:', url);
-            
-            carregarDisciplinas(url);
-            
-            // Focar na busca após carregar
-            setTimeout(() => {
-                document.getElementById('buscarDisciplina').focus();
-                document.getElementById('buscarDisciplina').select();
-            }, 500);
-        });
-    }
-
-    function carregarDisciplinas(url) {
-        console.log('carregarDisciplinas chamada com URL:', url);
-        const container = document.getElementById('listaDisciplinas');
-        container.innerHTML = "<div class='text-center'><div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Carregando...</span></div><p class='mt-2'>Carregando disciplinas...</p></div>";
+    
+    // Carregar sugestões customizadas (autocomplete bonito)
+    function carregarSugestoesCustomizadas(anoId, termo, inputElement) {
+        console.log('🔍 carregarSugestoesCustomizadas - AnoId:', anoId, 'Termo:', termo);
         
-        fetch(url)
-            .then(response => {
-                console.log('Resposta recebida:', response.status);
-                return response.json();
-            })
+        fetch('/disciplinas/api/todas')
+            .then(response => response.json())
             .then(data => {
-                console.log('Dados JSON:', data);
-                console.log('Total de disciplinas:', data.disciplinas ? data.disciplinas.length : 0);
-                if (data.disciplinas && data.disciplinas.length > 0) {
-                    todasDisciplinas = data.disciplinas;
-                    exibirDisciplinas(data.disciplinas);
-                } else {
-                    container.innerHTML = `
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i> 
-                            Nenhuma disciplina encontrada.
-                        </div>
-                    `;
+                const autocompleteDiv = document.getElementById(`autocomplete_${anoId}`);
+                
+                if (!autocompleteDiv) {
+                    console.error('❌ Autocomplete div não encontrado');
+                    return;
+                }
+                
+                autocompleteDiv.innerHTML = '';
+                
+                if (data.disciplinas) {
+                    const termoLower = termo.toLowerCase();
+                    const filtradas = data.disciplinas.filter(d => 
+                        d.nome.toLowerCase().includes(termoLower)
+                    ).slice(0, 10);
+                    
+                    console.log('✨ Disciplinas filtradas:', filtradas.length);
+                    
+                    if (filtradas.length > 0) {
+                        filtradas.forEach(disc => {
+                            const item = document.createElement('div');
+                            item.className = 'autocomplete-item';
+                            item.innerHTML = `<strong>${disc.nome}</strong>`;
+                            if (disc.codigo) {
+                                item.innerHTML += ` <span class="badge bg-secondary">${disc.codigo}</span>`;
+                            }
+                            
+                            item.addEventListener('click', function() {
+                                console.log('Clicou na sugestão:', disc.nome);
+                                adicionarDisciplinaAoAno(anoId, disc);
+                                inputElement.value = '';
+                                autocompleteDiv.style.display = 'none';
+                            });
+                            
+                            autocompleteDiv.appendChild(item);
+                        });
+                        
+                        // Posicionar abaixo do input
+                        const rect = inputElement.getBoundingClientRect();
+                        autocompleteDiv.style.top = (inputElement.offsetTop + inputElement.offsetHeight) + 'px';
+                        autocompleteDiv.style.left = inputElement.offsetLeft + 'px';
+                        autocompleteDiv.style.width = inputElement.offsetWidth + 'px';
+                        autocompleteDiv.style.display = 'block';
+                    } else {
+                        autocompleteDiv.style.display = 'none';
+                    }
                 }
             })
             .catch(error => {
-                console.error('Erro ao carregar disciplinas:', error);
-                container.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-x-circle"></i> Erro ao carregar disciplinas: ${error.message}
-                    </div>
-                `;
+                console.error('❌ Erro ao carregar sugestões:', error);
             });
     }
-
-    function exibirDisciplinas(disciplinas) {
-        const container = document.getElementById('listaDisciplinas');
+    
+    // Adicionar disciplina por nome (quando seleciona do autocomplete)
+    function adicionarDisciplinaPorNome(anoId, nome) {
+        console.log('🎯 adicionarDisciplinaPorNome - AnoId:', anoId, 'Nome:', nome);
         
-        if (disciplinas.length === 0) {
-            container.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> Nenhuma disciplina encontrada com os filtros aplicados.
-                </div>
-            `;
-            return;
-        }
+        fetch('/disciplinas/api/todas')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Buscando disciplina com nome:', nome);
+                
+                const disciplina = data.disciplinas.find(d => 
+                    d.nome.toLowerCase() === nome.toLowerCase()
+                );
+                
+                if (disciplina) {
+                    console.log('✅ Disciplina encontrada:', disciplina);
+                    adicionarDisciplinaAoAno(anoId, disciplina);
+                } else {
+                    console.warn('⚠️ Disciplina não encontrada:', nome);
+                    alert(`Disciplina "${nome}" não encontrada. Use o botão "Nova" para cadastrar.`);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erro:', error);
+            });
+    }
+    
+    // Carregar TODAS as disciplinas do banco para seleção
+    function carregarTodasDisciplinasAno(anoId) {
+        const container = document.getElementById(`listaDisciplinas_${anoId}`);
+        container.innerHTML = "<div class='text-center p-2'><div class='spinner-border spinner-border-sm text-primary'></div> Carregando...</div>";
+        container.style.display = 'block';
         
-        // Ordenar alfabeticamente
+        fetch('/disciplinas/api/todas')
+            .then(response => response.json())
+            .then(data => {
+                if (data.disciplinas && data.disciplinas.length > 0) {
+                    exibirListaSelecaoAno(anoId, data.disciplinas);
+                } else {
+                    container.innerHTML = `<div class="alert alert-warning alert-sm">Nenhuma disciplina encontrada.</div>`;
+                }
+            })
+            .catch(error => {
+                container.innerHTML = `<div class="alert alert-danger alert-sm">Erro: ${error.message}</div>`;
+            });
+    }
+    
+    // Exibir lista de todas as disciplinas para seleção
+    function exibirListaSelecaoAno(anoId, disciplinas) {
+        const container = document.getElementById(`listaDisciplinas_${anoId}`);
+        
         disciplinas.sort((a, b) => a.nome.localeCompare(b.nome));
         
         let html = `
-            <div class="alert alert-success mb-3">
-                <i class="bi bi-check-circle"></i> <strong>${disciplinas.length} disciplinas</strong> disponíveis
-                <span class="ms-3 text-dark">
-                    | <strong id="total-selecionadas">0</strong> selecionadas
-                </span>
-            </div>
-            <div class="mb-3">
-                <button type="button" class="btn btn-sm btn-primary" onclick="selecionarTodas()">
-                    <i class="bi bi-check-all"></i> Selecionar Todas
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="desmarcarTodas()">
-                    <i class="bi bi-x-circle"></i> Desmarcar Todas
-                </button>
-            </div>
-            <div class="row g-2">
+            <div class="card">
+                <div class="card-header bg-light py-2">
+                    <strong>${disciplinas.length} disciplinas disponíveis</strong>
+                    <button type="button" class="btn btn-sm btn-secondary float-end" onclick="fecharListaAno(${anoId})">
+                        <i class="bi bi-x"></i> Fechar
+                    </button>
+                </div>
+                <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+                    <div class="row g-2">
         `;
         
         disciplinas.forEach(disc => {
             html += `
                 <div class="col-md-6">
-                    <div class="form-check p-2 border rounded hover-shadow">
-                        <input class="form-check-input disciplina-checkbox" type="checkbox" 
-                               name="disciplinas_selecionadas[]" 
-                               value="${disc.id}" 
-                               id="disc_${disc.id}">
-                        <label class="form-check-label w-100" for="disc_${disc.id}">
-                            <strong>${disc.nome}</strong>
-                            ${disc.codigo ? `<span class="badge bg-secondary ms-1">${disc.codigo}</span>` : ''}
-                            ${disc.carga_horaria_padrao ? `<br><small class="text-muted">CH: ${disc.carga_horaria_padrao}h</small>` : ''}
-                        </label>
+                    <div class="p-2 border rounded hover-shadow" style="cursor:pointer;" 
+                         onclick="adicionarDisciplinaAoAno(${anoId}, ${JSON.stringify(disc).replace(/"/g, '&quot;')})">
+                        <strong>${disc.nome}</strong>
+                        ${disc.codigo ? `<span class="badge bg-secondary ms-1">${disc.codigo}</span>` : ''}
                     </div>
                 </div>
             `;
         });
         
-        html += '</div>';
-        container.innerHTML = html;
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
         
-        // Adicionar listener para atualizar contador
-        document.querySelectorAll('.disciplina-checkbox').forEach(cb => {
-            cb.addEventListener('change', atualizarContador);
-        });
-    }
-
-    function selecionarTodas() {
-        document.querySelectorAll('.disciplina-checkbox').forEach(cb => cb.checked = true);
-        atualizarContador();
-    }
-
-    function desmarcarTodas() {
-        document.querySelectorAll('.disciplina-checkbox').forEach(cb => cb.checked = false);
-        atualizarContador();
-    }
-
-    function atualizarContador() {
-        const total = document.querySelectorAll('.disciplina-checkbox:checked').length;
-        const elem = document.getElementById('total-selecionadas');
-        if (elem) elem.textContent = total;
+        container.innerHTML = html;
     }
     
-    // Expor funções globalmente para onclick
+    // Fechar lista de seleção
+    function fecharListaAno(anoId) {
+        document.getElementById(`listaDisciplinas_${anoId}`).style.display = 'none';
+    }
+    
+    // Adicionar disciplina ao ano com campo de nota
+    function adicionarDisciplinaAoAno(anoId, disciplina) {
+        const container = document.getElementById(`disciplinasAdicionadas_${anoId}`);
+        
+        // Verificar se já foi adicionada
+        if (document.getElementById(`disc_add_${anoId}_${disciplina.id}`)) {
+            alert('Disciplina já adicionada!');
+            return;
+        }
+        
+        // Criar estrutura de 2 colunas se não existir
+        let rowContainer = container.querySelector('.row.disciplinas-grid');
+        if (!rowContainer) {
+            rowContainer = document.createElement('div');
+            rowContainer.className = 'row disciplinas-grid g-2';
+            container.appendChild(rowContainer);
+        }
+        
+        const colDiv = document.createElement('div');
+        colDiv.className = 'col-md-6';
+        colDiv.id = `disc_add_${anoId}_${disciplina.id}`;
+        
+        colDiv.innerHTML = `
+            <div class="p-2 border rounded bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="flex-grow-1">
+                        <strong>${disciplina.nome}</strong>
+                        ${disciplina.codigo ? `<span class="badge bg-secondary ms-1">${disciplina.codigo}</span>` : ''}
+                    </div>
+                    <input type="hidden" name="anos[${anoId}][disciplinas][${disciplina.id}][disciplina_id]" value="${disciplina.id}">
+                    <input type="text" class="form-control form-control-sm nota-input-compacto" 
+                           name="anos[${anoId}][disciplinas][${disciplina.id}][nota]" 
+                           placeholder="Nota"
+                           pattern="^(10(\\.0)?|[0-9](\\.[0-9])?|A|EV|PD)$"
+                           title="0.0-10.0, A, EV ou PD"
+                           maxlength="4"
+                           style="width: 70px;"
+                           data-ano-id="${anoId}">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removerDisciplinaDoAno(${anoId}, ${disciplina.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-1">Nota: 0.0-10.0, A, EV, PD</small>
+            </div>
+        `;
+        
+        rowContainer.appendChild(colDiv);
+        
+        // Adicionar listener para auto-save ao digitar nota
+        const inputNota = colDiv.querySelector('.nota-input');
+        inputNota.addEventListener('input', function() {
+            validarNota(this);
+        });
+        inputNota.addEventListener('change', function() {
+            salvarFormularioBanco();
+        });
+        
+        // Fechar lista de seleção
+        fecharListaAno(anoId);
+        
+        // Auto-save
+        salvarFormularioBanco();
+    }
+    
+    // Validar nota
+    function validarNota(input) {
+        const valor = input.value.toUpperCase().trim();
+        
+        // Aceitar valores válidos
+        if (valor === 'A' || valor === 'EV' || valor === 'PD' || valor === '') {
+            input.setCustomValidity('');
+            return;
+        }
+        
+        // Validar número
+        const num = parseFloat(valor);
+        if (!isNaN(num) && num >= 0 && num <= 10) {
+            input.setCustomValidity('');
+        } else {
+            input.setCustomValidity('Digite nota de 0.0 a 10.0, ou A, EV, PD');
+        }
+    }
+    
+    // Remover disciplina do ano
+    function removerDisciplinaDoAno(anoId, disciplinaId) {
+        const elem = document.getElementById(`disc_add_${anoId}_${disciplinaId}`);
+        if (elem) {
+            elem.remove();
+            salvarFormularioBanco();
+        }
+    }
+    
+    // Abrir modal para criar nova disciplina
+    let anoIdAtualModal = null;
+    
+    function abrirModalNovaDisciplina(anoId) {
+        anoIdAtualModal = anoId;
+        
+        const nivelOriginal = document.getElementById('nivel').value;
+        if (!nivelOriginal) {
+            alert('Selecione primeiro o Nível de Ensino');
+            return;
+        }
+        
+        // Pedir nome da disciplina
+        const nomeDisciplina = prompt('Digite o nome da disciplina:');
+        if (!nomeDisciplina || nomeDisciplina.trim() === '') return;
+        
+        const modalidadeId = document.getElementById('modalidade_id').value;
+        const modalidadeNomes = {'1': 'Regular', '2': 'Supletivo', '3': 'EJA'};
+        const modalidade = modalidadeNomes[modalidadeId] || 'Regular';
+        const nivel = nivelOriginal.includes('Fundamental') ? 'Fundamental' : 'Médio';
+        
+        // Cadastrar disciplina
+        fetch('/disciplinas/cadastrar_rapido', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nome: nomeDisciplina.trim(),
+                codigo: null,
+                carga_horaria_padrao: 60,
+                ano_inicio: 1960,
+                nivel: nivel,
+                modalidade: modalidade,
+                ativa: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const disc = data.disciplina;
+                
+                // Adicionar disciplina à lista do ano
+                const container = document.getElementById(`listaDisciplinas_${anoId}`);
+                const divRow = container.querySelector('.row');
+                
+                if (!divRow) {
+                    // Se não tem disciplinas ainda, criar estrutura completa
+                    exibirDisciplinasAno(anoId, [disc]);
+                } else {
+                    // Adicionar à lista existente
+                    const novoItem = document.createElement('div');
+                    novoItem.className = 'col-md-6 disciplina-item';
+                    novoItem.innerHTML = `
+                        <div class="form-check p-2 border rounded hover-shadow">
+                            <input class="form-check-input disciplina-checkbox" type="checkbox" 
+                                   name="anos[${anoId}][disciplinas][]" 
+                                   value="${disc.id}" 
+                                   id="disc_${anoId}_${disc.id}"
+                                   data-ano-id="${anoId}"
+                                   checked>
+                            <label class="form-check-label w-100" for="disc_${anoId}_${disc.id}">
+                                <strong>${disc.nome}</strong>
+                            </label>
+                        </div>
+                    `;
+                    divRow.appendChild(novoItem);
+                    
+                    // Adicionar listener
+                    const checkbox = novoItem.querySelector('.disciplina-checkbox');
+                    checkbox.addEventListener('change', function() {
+                        atualizarContadorAno(anoId);
+                        salvarFormularioBanco();
+                    });
+                    
+                    atualizarContadorAno(anoId);
+                    salvarFormularioBanco();
+                }
+                
+                alert(`✅ Disciplina "${disc.nome}" cadastrada e adicionada!`);
+            } else {
+                alert('Erro ao cadastrar: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Erro ao cadastrar disciplina: ' + error.message);
+        });
+    }
+    
+    // Expor funções globalmente
     window.removerAnoLetivo = removerAnoLetivo;
-    window.selecionarTodas = selecionarTodas;
-    window.desmarcarTodas = desmarcarTodas;
+    window.fecharListaAno = fecharListaAno;
+    window.adicionarDisciplinaAoAno = adicionarDisciplinaAoAno;
+    window.removerDisciplinaDoAno = removerDisciplinaDoAno;
 
 }); // Fechar DOMContentLoaded
 </script>
@@ -570,6 +857,43 @@ document.addEventListener('DOMContentLoaded', function() {
 .hover-shadow:hover {
     box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
     background-color: #f8f9fa;
+}
+.alert-sm {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+.autocomplete-suggestions {
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #198754;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+.autocomplete-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s;
+}
+.autocomplete-item:hover {
+    background-color: #d1e7dd;
+    border-left: 4px solid #198754;
+}
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+.nota-input {
+    text-align: center;
+    font-weight: bold;
+}
+.nota-input-compacto {
+    text-align: center;
+    font-weight: bold;
+    min-width: 70px;
+    max-width: 70px;
 }
 </style>
 {% endblock %}

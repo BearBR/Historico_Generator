@@ -34,6 +34,9 @@ class Escola(db.Model):
     # Logo da Escola
     logo = db.Column(db.String(255))  # Caminho da imagem
     
+    # Escola Padrão (emissora de históricos)
+    eh_escola_padrao = db.Column(db.Boolean, default=False)
+    
     # Controle
     ativa = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
