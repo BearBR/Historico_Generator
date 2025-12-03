@@ -326,8 +326,8 @@ def editar_completo(id):
     escolas = Escola.query.filter_by(ativa=True).all()
     modalidades = ModalidadeEnsino.query.filter_by(ativa=True).all()
     disciplinas = DisciplinaHistorica.query.filter_by(ativa=True).order_by(DisciplinaHistorica.nome).all()
-    amparos_legais = AmparoLegal.query.filter_by(ativa=True).all()
-    resultados_finais = ResultadoFinal.query.all()
+    amparos_legais = AmparoLegal.query.filter_by(ativo=True).all()
+    resultados_finais = ResultadoFinal.query.filter_by(ativo=True).all()
     
     return render_template('historicos/novo.html',
                          historico=historico,

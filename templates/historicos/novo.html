@@ -17,7 +17,7 @@
     </div>
 </div>
 
-<form method="POST">
+<form method="POST" action="{% if é_edicao %}{{ url_for('historicos.editar', id=historico.id) }}{% else %}{{ url_for('historicos.novo') }}{% endif %}">
     <div class="card mb-4">
         <div class="card-header bg-info text-white">
             <h5 class="mb-0">Informações do Histórico</h5>
@@ -33,15 +33,15 @@
                     <label for="nivel" class="form-label fs-5 text-primary">
                         <i class="bi bi-1-circle-fill"></i> Nível de Ensino *
                     </label>
-                    <select class="form-select form-select-lg" id="nivel" name="nivel" required>
+                        <select class="form-select form-select-lg" id="nivel" name="nivel" required>
                         <option value="">Escolha o nível de ensino...</option>
-                        <option value="Fundamental 9 Anos">Ensino Fundamental - 9 Anos (1º ao 9º)</option>
-                        <option value="Fundamental 8 Séries">Ensino Fundamental - 8 Séries (1ª a 8ª)</option>
-                        <option value="Médio">Ensino Médio</option>
-                        <option value="Supletivo Fundamental">Supletivo - Ensino Fundamental</option>
-                        <option value="Supletivo Médio">Supletivo - Ensino Médio</option>
-                        <option value="EJA Fundamental">EJA - Ensino Fundamental</option>
-                        <option value="EJA Médio">EJA - Ensino Médio</option>
+                        <option value="Fundamental 9 Anos" {% if é_edicao and historico.nivel == 'Fundamental 9 Anos' %}selected{% endif %}>Ensino Fundamental - 9 Anos (1º ao 9º)</option>
+                        <option value="Fundamental 8 Séries" {% if é_edicao and historico.nivel == 'Fundamental 8 Séries' %}selected{% endif %}>Ensino Fundamental - 8 Séries (1ª a 8ª)</option>
+                        <option value="Médio" {% if é_edicao and historico.nivel == 'Médio' %}selected{% endif %}>Ensino Médio</option>
+                        <option value="Supletivo Fundamental" {% if é_edicao and historico.nivel == 'Supletivo Fundamental' %}selected{% endif %}>Supletivo - Ensino Fundamental</option>
+                        <option value="Supletivo Médio" {% if é_edicao and historico.nivel == 'Supletivo Médio' %}selected{% endif %}>Supletivo - Ensino Médio</option>
+                        <option value="EJA Fundamental" {% if é_edicao and historico.nivel == 'EJA Fundamental' %}selected{% endif %}>EJA - Ensino Fundamental</option>
+                        <option value="EJA Médio" {% if é_edicao and historico.nivel == 'EJA Médio' %}selected{% endif %}>EJA - Ensino Médio</option>
                     </select>
                 </div>
             </div>
@@ -62,7 +62,7 @@
                         <select class="form-select form-select-lg" id="aluno_id" name="aluno_id" required>
                             <option value="">Selecione um aluno...</option>
                             {% for aluno in alunos %}
-                            <option value="{{ aluno.id }}">{{ aluno.nome_completo }}</option>
+                            <option value="{{ aluno.id }}" {% if é_edicao and historico.aluno_id == aluno.id %}selected{% endif %}>{{ aluno.nome_completo }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -155,6 +155,37 @@
 let todasDisciplinas = [];
 let contadorAnos = 0;
 let éEdicao = {% if é_edicao %}true{% else %}false{% endif %};
+
+// Dados do histórico para edição
+{% if é_edicao and historico %}
+const dadosHistorico = {
+    id: {{ historico.id }},
+    nivel: '{{ historico.nivel }}',
+    aluno_id: {{ historico.aluno_id }},
+    modalidade_id: {{ historico.modalidade_id }},
+    anos: [
+        {% for ano_letivo in historico.anos_letivos %}
+        {
+            ano: {{ ano_letivo.ano }},
+            serie: '{{ ano_letivo.serie }}',
+            escola_id: {% if ano_letivo.escola_id %}{{ ano_letivo.escola_id }}{% else %}null{% endif %},
+            disciplinas: [
+                {% for disc_ano in ano_letivo.disciplinas %}
+                {
+                    disciplina_id: {{ disc_ano.disciplina_id }},
+                    disciplina_nome: '{{ disc_ano.disciplina_historica.nome }}',
+                    nota: '{{ disc_ano.nota_final or "" }}'
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+};
+console.log('📦 Dados do histórico carregados:', dadosHistorico);
+{% else %}
+const dadosHistorico = null;
+{% endif %}
 
 // ===== SISTEMA DE AUTO-SAVE =====
 let historicoIdAtual = {% if historico %}{{ historico.id }}{% else %}null{% endif %};
@@ -324,41 +355,54 @@ document.addEventListener('DOMContentLoaded', function() {
         // Armazenar séries disponíveis globalmente
         window.seriesDisponiveis = seriesDisponiveis;
         
-        // Limpar anos anteriores
-        document.getElementById('anosLetivos').innerHTML = '';
-        contadorAnos = 0;
-        
-        // Se for edição, carregar anos salvos
-        {% if é_edicao and historico %}
-        if (historicoIdAtual) {
-            console.log('📚 Carregando anos do histórico...');
-            {% for ano_letivo in historico.anos_letivos %}
-            adicionarAnoLetivo();
-            setTimeout(() => {
-                const ultimoAnoContainer = document.querySelector('.ano-letivo-container:last-child');
-                if (ultimoAnoContainer) {
-                    const anoId = ultimoAnoContainer.querySelector('.ano-input').dataset.anoId;
-                    document.querySelector(`input.ano-input[data-ano-id="${anoId}"]`).value = '{{ ano_letivo.ano }}';
-                    document.querySelector(`select.serie-select[data-ano-id="${anoId}"]`).value = '{{ ano_letivo.serie }}';
-                    {% if ano_letivo.escola_id %}
-                    document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`).value = '{{ ano_letivo.escola_id }}';
-                    {% endif %}
-                    
-                    // Carregar disciplinas
-                    {% for disc_ano in ano_letivo.disciplinas %}
-                    const disciplina_id = {{ disc_ano.disciplina_id }};
-                    const nota = '{{ disc_ano.nota_final or "" }}';
-                    console.log('📖 Adicionando disciplina:', disciplina_id, 'nota:', nota);
-                    // Aqui você poderia chamar adicionarDisciplinaAoAno com os dados
-                    {% endfor %}
-                }
-            }, 100);
-            {% endfor %}
+        // Limpar anos anteriores (apenas se NÃO for edição ou se mudar o nível)
+        if (!éEdicao || document.getElementById('anosLetivos').children.length > 0) {
+            document.getElementById('anosLetivos').innerHTML = '';
+            contadorAnos = 0;
         }
-        {% else %}
-        // Adicionar primeiro ano automaticamente (novo histórico)
-        adicionarAnoLetivo();
-        {% endif %}
+        
+        // Se for edição, carregar anos do histórico
+        if (éEdicao && dadosHistorico && dadosHistorico.anos.length > 0) {
+            console.log('📚 Carregando', dadosHistorico.anos.length, 'anos do histórico...');
+            dadosHistorico.anos.forEach((anoData, index) => {
+                setTimeout(() => {
+                    adicionarAnoLetivo();
+                    const ultimoAnoContainer = document.querySelectorAll('.ano-letivo-container')[index];
+                    if (ultimoAnoContainer) {
+                        const anoId = ultimoAnoContainer.querySelector('.ano-input').dataset.anoId;
+                        
+                        // Preencher dados do ano
+                        document.querySelector(`input.ano-input[data-ano-id="${anoId}"]`).value = anoData.ano;
+                        document.querySelector(`select.serie-select[data-ano-id="${anoId}"]`).value = anoData.serie;
+                        if (anoData.escola_id) {
+                            document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`).value = anoData.escola_id;
+                        }
+                        
+                        // Carregar disciplinas
+                        anoData.disciplinas.forEach(discData => {
+                            const disciplina = {
+                                id: discData.disciplina_id,
+                                nome: discData.disciplina_nome
+                            };
+                            adicionarDisciplinaAoAno(anoId, disciplina);
+                            
+                            // Preencher nota
+                            if (discData.nota) {
+                                setTimeout(() => {
+                                    const notaInput = document.querySelector(`#disciplinasAdicionadas_${anoId} input.nota-input[data-disciplina-id="${discData.disciplina_id}"]`);
+                                    if (notaInput) {
+                                        notaInput.value = discData.nota;
+                                    }
+                                }, 50);
+                            }
+                        });
+                    }
+                }, index * 200); // Delay entre cada ano para garantir que sejam criados em ordem
+            });
+        } else if (!éEdicao) {
+            // Adicionar primeiro ano automaticamente (apenas para novo histórico)
+            adicionarAnoLetivo();
+        }
     });
     
     // Listener no aluno para auto-save
@@ -375,12 +419,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 30000);
 
-    // Disparar o evento change do nível para carregar anos
-    {% if é_edicao and historico %}
-    setTimeout(() => {
-        document.getElementById('nivel').dispatchEvent(new Event('change'));
-    }, 100);
-    {% endif %}    // Botão adicionar ano
+    // Disparar o evento change do nível para carregar anos (se for edição)
+    if (éEdicao && dadosHistorico) {
+        setTimeout(() => {
+            document.getElementById('nivel').dispatchEvent(new Event('change'));
+        }, 100);
+    }
+    
+    // Botão adicionar ano
     document.getElementById('btnAdicionarAno').addEventListener('click', adicionarAnoLetivo);
 
     // Função para adicionar um novo ano letivo
@@ -738,14 +784,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${disciplina.codigo ? `<span class="badge bg-secondary ms-1">${disciplina.codigo}</span>` : ''}
                     </div>
                     <input type="hidden" name="anos[${anoId}][disciplinas][${disciplina.id}][disciplina_id]" value="${disciplina.id}">
-                    <input type="text" class="form-control form-control-sm nota-input-compacto" 
+                    <input type="text" class="form-control form-control-sm nota-input-compacto nota-input" 
                            name="anos[${anoId}][disciplinas][${disciplina.id}][nota]" 
                            placeholder="Nota"
                            pattern="^(10(\\.0)?|[0-9](\\.[0-9])?|A|EV|PD)$"
                            title="0.0-10.0, A, EV ou PD"
                            maxlength="4"
                            style="width: 70px;"
-                           data-ano-id="${anoId}">
+                           data-ano-id="${anoId}"
+                           data-disciplina-id="${disciplina.id}">
                     <button type="button" class="btn btn-sm btn-danger" onclick="removerDisciplinaDoAno(${anoId}, ${disciplina.id})">
                         <i class="bi bi-trash"></i>
                     </button>
