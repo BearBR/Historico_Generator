@@ -13,6 +13,12 @@ class DisciplinaHistorica(db.Model):
     modalidade_id = db.Column(db.Integer, db.ForeignKey('modalidades_ensino.id'))
     ativa = db.Column(db.Boolean, default=True)
     
+    def __init__(self, **kwargs):
+        # Converter nome para maiúsculas automaticamente
+        if 'nome' in kwargs:
+            kwargs['nome'] = kwargs['nome'].upper()
+        super().__init__(**kwargs)
+    
     def __repr__(self):
         return f'<Disciplina {self.nome} ({self.ano_inicio}-{self.ano_fim or "atual"})>'
     

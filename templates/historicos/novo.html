@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Novo Histórico{% endblock %}
+{% block title %}{% if é_edicao %}Editar Histórico{% else %}Novo Histórico{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h2><i class="bi bi-file-earmark-plus"></i> Criar Novo Histórico</h2>
+        <h2><i class="bi {% if é_edicao %}bi-pencil-square{% else %}bi-file-earmark-plus{% endif %}"></i> {% if é_edicao %}Editar Histórico{% else %}Criar Novo Histórico{% endif %}</h2>
         <hr>
         <!-- Indicador de Auto-Save -->
         <div class="alert alert-success" id="alertAutoSave" style="display:none;">
@@ -154,9 +154,10 @@
 <script>
 let todasDisciplinas = [];
 let contadorAnos = 0;
+let éEdicao = {% if é_edicao %}true{% else %}false{% endif %};
 
 // ===== SISTEMA DE AUTO-SAVE =====
-let historicoIdAtual = null;
+let historicoIdAtual = {% if historico %}{{ historico.id }}{% else %}null{% endif %};
 let salvandoNoBanco = false;
 
 // Salvar dados do formulário NO BANCO DE DADOS
@@ -264,6 +265,14 @@ async function salvarFormularioBanco() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado, inicializando eventos...');
 
+    // Se for edição, carregar dados do histórico
+    {% if é_edicao and historico %}
+    console.log('🔄 Carregando dados do histórico para edição...');
+    document.getElementById('nivel').value = '{{ historico.nivel }}';
+    document.getElementById('aluno_id').value = '{{ historico.aluno_id }}';
+    document.getElementById('modalidade_id').value = '{{ historico.modalidade_id }}';
+    {% endif %}
+
     // PASSO 1: Ao selecionar o NÍVEL, ajustar série e modalidade
     document.getElementById('nivel').addEventListener('change', function() {
         const nivel = this.value;
@@ -319,8 +328,37 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('anosLetivos').innerHTML = '';
         contadorAnos = 0;
         
-        // Adicionar primeiro ano automaticamente
+        // Se for edição, carregar anos salvos
+        {% if é_edicao and historico %}
+        if (historicoIdAtual) {
+            console.log('📚 Carregando anos do histórico...');
+            {% for ano_letivo in historico.anos_letivos %}
+            adicionarAnoLetivo();
+            setTimeout(() => {
+                const ultimoAnoContainer = document.querySelector('.ano-letivo-container:last-child');
+                if (ultimoAnoContainer) {
+                    const anoId = ultimoAnoContainer.querySelector('.ano-input').dataset.anoId;
+                    document.querySelector(`input.ano-input[data-ano-id="${anoId}"]`).value = '{{ ano_letivo.ano }}';
+                    document.querySelector(`select.serie-select[data-ano-id="${anoId}"]`).value = '{{ ano_letivo.serie }}';
+                    {% if ano_letivo.escola_id %}
+                    document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`).value = '{{ ano_letivo.escola_id }}';
+                    {% endif %}
+                    
+                    // Carregar disciplinas
+                    {% for disc_ano in ano_letivo.disciplinas %}
+                    const disciplina_id = {{ disc_ano.disciplina_id }};
+                    const nota = '{{ disc_ano.nota_final or "" }}';
+                    console.log('📖 Adicionando disciplina:', disciplina_id, 'nota:', nota);
+                    // Aqui você poderia chamar adicionarDisciplinaAoAno com os dados
+                    {% endfor %}
+                }
+            }, 100);
+            {% endfor %}
+        }
+        {% else %}
+        // Adicionar primeiro ano automaticamente (novo histórico)
         adicionarAnoLetivo();
+        {% endif %}
     });
     
     // Listener no aluno para auto-save
@@ -337,7 +375,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 30000);
 
-    // Botão adicionar ano
+    // Disparar o evento change do nível para carregar anos
+    {% if é_edicao and historico %}
+    setTimeout(() => {
+        document.getElementById('nivel').dispatchEvent(new Event('change'));
+    }, 100);
+    {% endif %}    // Botão adicionar ano
     document.getElementById('btnAdicionarAno').addEventListener('click', adicionarAnoLetivo);
 
     // Função para adicionar um novo ano letivo

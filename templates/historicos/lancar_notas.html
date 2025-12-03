@@ -76,6 +76,7 @@
                                 <th style="width: 100px;">Freq. %</th>
                                 {% endif %}
                                 <th style="width: 120px;">Resultado</th>
+                                <th style="width: 50px;">Ação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -126,6 +127,13 @@
                                         <option value="EV" {% if disc_ano.resultado == 'EV' %}selected{% endif %}>EV - Evadido</option>
                                         <option value="D" {% if disc_ano.resultado == 'D' %}selected{% endif %}>D - Desistente</option>
                                     </select>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="removerDisciplinaLancarNotas({{ disc_ano.id }}, this)"
+                                            title="Remover disciplina">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -251,6 +259,13 @@
 
 {% block extra_js %}
 <script>
+// Função para remover disciplina
+function removerDisciplinaLancarNotas(disciplinaId, btn) {
+    if (confirm('Tem certeza que deseja remover esta disciplina?')) {
+        btn.closest('tr').remove();
+    }
+}
+
 // Toggle campos de conclusão
 document.getElementById('conclusao_curso').addEventListener('change', function() {
     const campos = document.getElementById('campos_conclusao');

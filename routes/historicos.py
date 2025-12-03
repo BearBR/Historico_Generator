@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify
-from models import Historico, Aluno, Escola, ModalidadeEnsino, HistoricoDisciplina, DisciplinaHistorica, HistoricoAnoLetivo, HistoricoAnoDisciplina, ResultadoFinal
+from models import Historico, Aluno, Escola, ModalidadeEnsino, HistoricoDisciplina, DisciplinaHistorica, HistoricoAnoLetivo, HistoricoAnoDisciplina, ResultadoFinal, AmparoLegal
 from extensions import db
 from datetime import datetime
 from pdf_generator.historico_pdf import gerar_pdf_historico
@@ -313,6 +313,31 @@ def editar(id):
                          escolas=escolas, 
                          modalidades=modalidades,
                          disciplinas=disciplinas)
+
+@bp.route('/editar-completo/<int:id>', methods=['GET'])
+def editar_completo(id):
+    """Edita um histórico completo (anos, disciplinas, etc) usando a interface do novo.html"""
+    historico = Historico.query.options(
+        db.joinedload(Historico.anos_letivos).joinedload(HistoricoAnoLetivo.disciplinas)
+    ).get_or_404(id)
+    
+    # Buscar dados necessários
+    alunos = Aluno.query.filter_by(ativo=True).all()
+    escolas = Escola.query.filter_by(ativa=True).all()
+    modalidades = ModalidadeEnsino.query.filter_by(ativa=True).all()
+    disciplinas = DisciplinaHistorica.query.filter_by(ativa=True).order_by(DisciplinaHistorica.nome).all()
+    amparos_legais = AmparoLegal.query.filter_by(ativa=True).all()
+    resultados_finais = ResultadoFinal.query.all()
+    
+    return render_template('historicos/novo.html',
+                         historico=historico,
+                         alunos=alunos,
+                         escolas=escolas,
+                         modalidades=modalidades,
+                         disciplinas=disciplinas,
+                         amparos_legais=amparos_legais,
+                         resultados_finais=resultados_finais,
+                         é_edicao=True)
 
 @bp.route('/lancar-notas/<int:id>', methods=['GET', 'POST'])
 def lancar_notas(id):
