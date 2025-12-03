@@ -311,6 +311,7 @@ document.querySelectorAll('.nota-input').forEach(input => {
     input.addEventListener('input', function() {
         const disciplinaId = this.dataset.disciplina;
         verificarResultado(disciplinaId);
+        calcularResultadoFinalAno();
     });
 });
 
@@ -320,7 +321,44 @@ document.getElementById('media_minima').addEventListener('input', function() {
         const disciplinaId = input.dataset.disciplina;
         verificarResultado(disciplinaId);
     });
+    calcularResultadoFinalAno();
 });
+
+// Calcular resultado final do ano baseado nas disciplinas
+function calcularResultadoFinalAno() {
+    // Para cada ano letivo
+    document.querySelectorAll('[id^="ano_"]').forEach(anoSection => {
+        const anoId = anoSection.id.replace('ano_', '');
+        const resultadoFinalSelect = document.querySelector(`select[name="ano_${anoId}_resultado_final_id"]`);
+        
+        if (!resultadoFinalSelect) return;
+        
+        // Pegar todas as disciplinas deste ano
+        const disciplinasDoAno = anoSection.querySelectorAll('.nota-input');
+        let todasAprovadas = true;
+        let temReprovacao = false;
+        
+        disciplinasDoAno.forEach(input => {
+            const disciplinaId = input.dataset.disciplina;
+            const resultadoSelect = document.getElementById(`resultado_${disciplinaId}`);
+            
+            if (resultadoSelect && resultadoSelect.value === 'R') {
+                temReprovacao = true;
+                todasAprovadas = false;
+            }
+        });
+        
+        // Se todas aprovadas, marcar resultado final como Aprovado (ID 1)
+        // Se alguma reprovada, marcar como Reprovado (ID 2)
+        if (disciplinasDoAno.length > 0) {
+            if (todasAprovadas) {
+                resultadoFinalSelect.value = '1'; // A - Aprovado
+            } else if (temReprovacao) {
+                resultadoFinalSelect.value = '2'; // R - Reprovado
+            }
+        }
+    });
+}
 
 // Calcular frequência automaticamente
 function calcularFrequencia(disciplinaId) {
@@ -346,6 +384,9 @@ function calcularFrequencia(disciplinaId) {
             freqInput.classList.remove('bg-warning', 'text-dark', 'fw-bold');
         }
     }
+    
+    // Recalcular resultado final do ano após mudar frequência
+    calcularResultadoFinalAno();
 }
 
 document.querySelectorAll('.ch-input, .faltas-input').forEach(input => {

@@ -154,6 +154,21 @@
 <script>
 let todasDisciplinas = [];
 let contadorAnos = 0;
+
+// Debug no submit do formulário
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const anosCards = document.querySelectorAll('.ano-letivo-container');
+        console.log(`📝 SUBMIT: Total de anos criados no formulário: ${anosCards.length}`);
+        anosCards.forEach((card, index) => {
+            const anoInput = card.querySelector('.ano-input');
+            const serieSelect = card.querySelector('.serie-select');
+            const anoId = anoInput?.dataset.anoId;
+            console.log(`  Ano #${index + 1} (ID: ${anoId}): ${anoInput?.value} - ${serieSelect?.value}`);
+        });
+    });
+});
 let éEdicao = {% if é_edicao %}true{% else %}false{% endif %};
 
 // Dados do histórico para edição
@@ -172,7 +187,7 @@ const dadosHistorico = {
             disciplinas: [
                 {% for disc_ano in ano_letivo.disciplinas %}
                 {
-                    disciplina_id: {{ disc_ano.disciplina_id }},
+                    disciplina_id: {{ disc_ano.disciplina_historica_id }},
                     disciplina_nome: '{{ disc_ano.disciplina_historica.nome }}',
                     nota: '{{ disc_ano.nota_final or "" }}'
                 }{% if not loop.last %},{% endif %}
@@ -208,6 +223,26 @@ async function salvarFormularioBanco() {
         // Validar campos obrigatórios
         if (!nivel || !aluno_id || !modalidade_id) {
             console.log('⚠️ Campos obrigatórios não preenchidos ainda');
+            salvandoNoBanco = false;
+            return;
+        }
+        
+        // Verificar se há pelo menos um ano com dados válidos
+        const anosInputs = document.querySelectorAll('.ano-input');
+        let temAnoValido = false;
+        for (let anoInput of anosInputs) {
+            const anoId = anoInput.dataset.anoId;
+            const serieSelect = document.querySelector(`select.serie-select[data-ano-id="${anoId}"]`);
+            const escolaSelect = document.querySelector(`select.escola-select[data-ano-id="${anoId}"]`);
+            
+            if (anoInput.value && serieSelect?.value && escolaSelect?.value) {
+                temAnoValido = true;
+                break;
+            }
+        }
+        
+        if (!temAnoValido) {
+            console.log('⚠️ Nenhum ano letivo completo para salvar');
             salvandoNoBanco = false;
             return;
         }
@@ -308,6 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // PASSO 1: Ao selecionar o NÍVEL, ajustar série e modalidade
     document.getElementById('nivel').addEventListener('change', function() {
+        console.log('🎯 Evento change disparado no nível. primeiraVezNivel:', primeiraVezNivel, 'éEdicao:', éEdicao);
         const nivel = this.value;
         const modalidadeInput = document.getElementById('modalidade_id');
         
@@ -332,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('Modalidade definida:', modalidadeInput.value);
         
-        salvarFormularioBanco(); // Auto-save ao mudar nível
+        // salvarFormularioBanco(); // Auto-save desativado
         
         // Definir séries baseadas no nível
         let seriesDisponiveis = [];
@@ -368,16 +404,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Se for edição E primeira vez, carregar anos do histórico
+        console.log('🔍 Verificando condições:', {éEdicao, primeiraVezNivel, temDados: !!dadosHistorico, qtdAnos: dadosHistorico?.anos?.length});
         if (éEdicao && primeiraVezNivel && dadosHistorico && dadosHistorico.anos.length > 0) {
-            console.log('📚 Carregando', dadosHistorico.anos.length, 'anos do histórico...');
+            console.log('✅ Condições atendidas! Carregando', dadosHistorico.anos.length, 'anos do histórico...');
             dadosHistorico.anos.forEach((anoData, index) => {
                 setTimeout(() => {
+                    console.log(`🏗️ Criando ano ${index + 1} de ${dadosHistorico.anos.length}...`);
                     adicionarAnoLetivo();
-                    const ultimoAnoContainer = document.querySelectorAll('.ano-letivo-container')[index];
+                    
+                    // Aguardar um pouco para garantir que o elemento foi criado no DOM
+                    setTimeout(() => {
+                        const todosContainers = document.querySelectorAll('.ano-letivo-container');
+                        console.log(`📦 Total de containers encontrados: ${todosContainers.length}`);
+                        const ultimoAnoContainer = todosContainers[index];
+                        console.log(`📦 Container do ano ${index + 1} encontrado:`, !!ultimoAnoContainer);
                     if (ultimoAnoContainer) {
                         const anoId = ultimoAnoContainer.querySelector('.ano-input').dataset.anoId;
-                        
-                        console.log(`📖 Ano ${index + 1}:`, anoData);
+                        console.log(`📖 Ano ${index + 1} (ID: ${anoId}):`, anoData);
                         
                         // Preencher dados do ano
                         document.querySelector(`input.ano-input[data-ano-id="${anoId}"]`).value = anoData.ano;
@@ -387,7 +430,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         // Carregar disciplinas
+                        console.log(`📚 Carregando ${anoData.disciplinas.length} disciplinas para o ano ${anoId}...`);
                         anoData.disciplinas.forEach(discData => {
+                            console.log(`🔧 Adicionando disciplina:`, discData);
                             const disciplina = {
                                 id: discData.disciplina_id,
                                 nome: discData.disciplina_nome
@@ -399,15 +444,26 @@ document.addEventListener('DOMContentLoaded', function() {
                                 setTimeout(() => {
                                     const notaInput = document.querySelector(`#disciplinasAdicionadas_${anoId} input.nota-input[data-disciplina-id="${discData.disciplina_id}"]`);
                                     if (notaInput) {
+                                        console.log(`📝 Preenchendo nota ${discData.nota} para disciplina ${discData.disciplina_id}`);
                                         notaInput.value = discData.nota;
+                                    } else {
+                                        console.error(`❌ Input de nota não encontrado para disciplina ${discData.disciplina_id}`);
                                     }
                                 }, 50);
                             }
                         });
                     }
-                }, index * 200); // Delay entre cada ano para garantir que sejam criados em ordem
+                    }, 50); // Aguardar 50ms para o DOM atualizar
+                }, index * 150); // Delay entre cada ano para garantir que sejam criados em ordem
             });
             primeiraVezNivel = false; // Marcar que já carregou
+            
+            // Após carregar todos os dados da edição, permitir clonagem em novos anos
+            setTimeout(() => {
+                éEdicao = false;
+                console.log('✅ Dados da edição carregados. Modo de criação ativado para novos anos.');
+                console.log('🔄 Clonagem de disciplinas ATIVADA para novos anos!');
+            }, (dadosHistorico.anos.length * 150) + 300);
         } else if (!éEdicao) {
             // Adicionar primeiro ano automaticamente (apenas para novo histórico)
             adicionarAnoLetivo();
@@ -419,19 +475,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Listener no aluno para auto-save
-    document.getElementById('aluno_id').addEventListener('change', function() {
-        salvarFormularioBanco();
-    });
+    // Listener no aluno desativado
+    // document.getElementById('aluno_id').addEventListener('change', function() {
+    //     salvarFormularioBanco();
+    // });
 
-    // Auto-save periódico a cada 30 segundos
-    setInterval(function() {
-        const aluno_id = document.getElementById('aluno_id')?.value;
-        if (aluno_id) {
-            console.log('⏰ Auto-save periódico (30s)');
-            salvarFormularioBanco();
-        }
-    }, 30000);
+    // Auto-save periódico desativado para evitar erros
+    // setInterval(function() {
+    //     const aluno_id = document.getElementById('aluno_id')?.value;
+    //     if (aluno_id) {
+    //         console.log('⏰ Auto-save periódico (30s)');
+    //         salvarFormularioBanco();
+    //     }
+    // }, 30000);
 
     // Disparar o evento change do nível para carregar anos (se for edição)
     if (éEdicao && dadosHistorico) {
@@ -441,15 +497,49 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Botão adicionar ano
-    document.getElementById('btnAdicionarAno').addEventListener('click', adicionarAnoLetivo);
+    document.getElementById('btnAdicionarAno').addEventListener('click', function() {
+        adicionarAnoLetivo();
+        // Salvar após adicionar ano
+        setTimeout(() => {
+            salvarFormularioBanco();
+        }, 500);
+    });
 
     // Função para adicionar um novo ano letivo
     function adicionarAnoLetivo() {
+        // Buscar dados do ano anterior para clonar
+        let anoAnterior = null;
+        let disciplinasAnteriores = [];
+        
+        if (contadorAnos > 0) {
+            // Pegar o último ano criado
+            const ultimoAnoInput = document.querySelector(`.ano-input[data-ano-id="${contadorAnos}"]`);
+            if (ultimoAnoInput && ultimoAnoInput.value) {
+                anoAnterior = parseInt(ultimoAnoInput.value);
+            }
+            
+            // Pegar as disciplinas do ano anterior
+            const containerDiscAnteriores = document.getElementById(`disciplinasAdicionadas_${contadorAnos}`);
+            if (containerDiscAnteriores) {
+                containerDiscAnteriores.querySelectorAll('[id^="disc_add_"]').forEach(div => {
+                    const inputDiscId = div.querySelector('input[name*="[disciplina_id]"]');
+                    const strongNome = div.querySelector('strong');
+                    
+                    if (inputDiscId && strongNome) {
+                        disciplinasAnteriores.push({
+                            id: parseInt(inputDiscId.value),
+                            nome: strongNome.textContent.trim()
+                        });
+                    }
+                });
+            }
+        }
+        
         contadorAnos++;
         const container = document.getElementById('anosLetivos');
         
         const anoCard = document.createElement('div');
-        anoCard.className = 'card mb-3';
+        anoCard.className = 'card mb-3 ano-letivo-container';
         anoCard.id = `anoCard_${contadorAnos}`;
         anoCard.innerHTML = `
         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
@@ -465,7 +555,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="bi bi-calendar"></i> Ano Letivo *
                     </label>
                     <input type="number" class="form-control ano-input" name="anos[${contadorAnos}][ano]" 
-                           min="1960" max="2003" required data-ano-id="${contadorAnos}">
+                           min="1960" max="2003" required data-ano-id="${contadorAnos}"
+                           value="${anoAnterior ? anoAnterior + 1 : ''}">
                     <small class="text-muted">1960-2003</small>
                 </div>
                 
@@ -538,9 +629,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const btnNova = anoCard.querySelector('.btn-nova-disciplina');
         const inputBusca = anoCard.querySelector('.buscar-disciplina-ano');
         
-        anoInput.addEventListener('change', () => { verificarAnosPreenchidos(); salvarFormularioBanco(); });
-        serieSelect.addEventListener('change', () => { verificarAnosPreenchidos(); salvarFormularioBanco(); });
-        escolaSelect.addEventListener('change', () => { verificarAnosPreenchidos(); salvarFormularioBanco(); });
+        anoInput.addEventListener('change', () => { 
+            verificarAnosPreenchidos();
+            // Salvar se ano, série e escola estiverem preenchidos
+            if (anoInput.value && serieSelect.value && escolaSelect.value) {
+                setTimeout(() => salvarFormularioBanco(), 500);
+            }
+        });
+        serieSelect.addEventListener('change', () => { 
+            verificarAnosPreenchidos();
+            // Salvar se ano, série e escola estiverem preenchidos
+            if (anoInput.value && serieSelect.value && escolaSelect.value) {
+                setTimeout(() => salvarFormularioBanco(), 500);
+            }
+        });
+        escolaSelect.addEventListener('change', () => { 
+            verificarAnosPreenchidos();
+            // Salvar se ano, série e escola estiverem preenchidos
+            if (anoInput.value && serieSelect.value && escolaSelect.value) {
+                setTimeout(() => salvarFormularioBanco(), 500);
+            }
+        });
         
         // Carregar disciplinas
         btnCarregar.addEventListener('click', () => carregarTodasDisciplinasAno(contadorAnos));
@@ -588,6 +697,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
+        
+        // Clonar disciplinas do ano anterior (sem notas) - SOMENTE se não for modo edição
+        // No modo edição, as disciplinas já são carregadas do banco de dados
+        if (disciplinasAnteriores.length > 0 && !éEdicao) {
+            console.log(`📋 Clonando ${disciplinasAnteriores.length} disciplinas do ano anterior...`);
+            disciplinasAnteriores.forEach((disc, index) => {
+                setTimeout(() => {
+                    adicionarDisciplinaAoAno(contadorAnos, disc);
+                    console.log(`✅ Disciplina clonada: ${disc.nome}`);
+                }, index * 50); // Pequeno delay entre cada disciplina
+            });
+        }
         
         verificarAnosPreenchidos();
     }
@@ -822,15 +943,16 @@ document.addEventListener('DOMContentLoaded', function() {
         inputNota.addEventListener('input', function() {
             validarNota(this);
         });
-        inputNota.addEventListener('change', function() {
-            salvarFormularioBanco();
-        });
+        // Auto-save desativado
+        // inputNota.addEventListener('change', function() {
+        //     salvarFormularioBanco();
+        // });
         
         // Fechar lista de seleção
         fecharListaAno(anoId);
         
-        // Auto-save
-        salvarFormularioBanco();
+        // Auto-save desativado
+        // salvarFormularioBanco();
     }
     
     // Validar nota
@@ -857,7 +979,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const elem = document.getElementById(`disc_add_${anoId}_${disciplinaId}`);
         if (elem) {
             elem.remove();
-            salvarFormularioBanco();
+            // salvarFormularioBanco(); // Auto-save desativado
         }
     }
     
@@ -931,11 +1053,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const checkbox = novoItem.querySelector('.disciplina-checkbox');
                     checkbox.addEventListener('change', function() {
                         atualizarContadorAno(anoId);
-                        salvarFormularioBanco();
+                        // salvarFormularioBanco(); // Auto-save desativado
                     });
                     
                     atualizarContadorAno(anoId);
-                    salvarFormularioBanco();
+                    // salvarFormularioBanco(); // Auto-save desativado
                 }
                 
                 alert(`✅ Disciplina "${disc.nome}" cadastrada e adicionada!`);

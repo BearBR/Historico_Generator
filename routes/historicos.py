@@ -62,6 +62,7 @@ def novo():
                     anos_dict[idx][campo] = request.form[key]
             
             print(f"✅ DEBUG: anos_dict = {anos_dict}\n")
+            print(f"📊 DEBUG: Total de anos encontrados no formulário: {len(anos_dict)}")
             
             for idx, ano_data in anos_dict.items():
                 # Extrair dados do ano
@@ -178,7 +179,8 @@ def novo():
     return render_template('historicos/novo.html', 
                          alunos=alunos, 
                          escolas=escolas, 
-                         modalidades=modalidades)
+                         modalidades=modalidades,
+                         é_edicao=False)
 
 @bp.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
@@ -278,14 +280,28 @@ def editar(id):
                         nota_value = request.form[disc_key].strip()
                         
                         if nota_value:
-                            ano_disciplina = HistoricoAnoDisciplina(
-                                ano_letivo_id=ano_letivo.id,
-                                disciplina_id=disc_id,
-                                nota=nota_value
-                            )
-                            db.session.add(ano_disciplina)
-                            total_disciplinas += 1
-                            disciplinas_encontradas += 1
+                            # Buscar disciplina para pegar carga horária padrão
+                            disciplina = DisciplinaHistorica.query.get(disc_id)
+                            if disciplina:
+                                nota_final = None
+                                if nota_value and nota_value not in ['A', 'EV', 'PD']:
+                                    try:
+                                        nota_final = float(nota_value)
+                                    except:
+                                        nota_final = None
+                                
+                                ano_disciplina = HistoricoAnoDisciplina(
+                                    ano_letivo_id=ano_letivo.id,
+                                    disciplina_historica_id=disc_id,
+                                    nota_final=nota_final,
+                                    carga_horaria=disciplina.carga_horaria_padrao or 0,
+                                    faltas=0,
+                                    frequencia=100.0,
+                                    resultado='P'
+                                )
+                                db.session.add(ano_disciplina)
+                                total_disciplinas += 1
+                                disciplinas_encontradas += 1
                 
                 print(f"  📊 Total de disciplinas para ano {idx}: {disciplinas_encontradas}\n")
             
@@ -346,6 +362,7 @@ def lancar_notas(id):
     
     if request.method == 'POST':
         try:
+            print("\n🎯 DEBUG LANCAR_NOTAS: Iniciando processamento do POST")
             print("DEBUG: Dados do formulário recebidos:")
             for key, value in request.form.items():
                 print(f"  {key} = {value}")
@@ -354,7 +371,7 @@ def lancar_notas(id):
             for ano_letivo in historico.anos_letivos:
                 # Atualizar dados do ano letivo
                 resultado_final_value = request.form.get(f'ano_{ano_letivo.id}_resultado_final_id')
-                ano_letivo.resultado_final_id = int(resultado_final_value) if resultado_final_value and resultado_final_value != '' else None
+                ano_letivo.resultado_final_id = int(resultado_final_value) if resultado_final_value and resultado_final_value != '' and resultado_final_value != 'None' else None
                 
                 # Calcular carga horária total do ano
                 ch_total = 0
@@ -371,9 +388,9 @@ def lancar_notas(id):
                         ch_value = request.form.get(ch_key)
                         faltas_value = request.form.get(faltas_key)
                         
-                        disc_ano.nota_final = float(nota_value) if nota_value and nota_value != '' else 0.0
-                        disc_ano.carga_horaria = int(ch_value) if ch_value and ch_value != '' else 0
-                        disc_ano.faltas = int(faltas_value) if faltas_value and faltas_value != '' else 0
+                        disc_ano.nota_final = float(nota_value) if nota_value and nota_value != '' and nota_value != 'None' else 0.0
+                        disc_ano.carga_horaria = int(ch_value) if ch_value and ch_value != '' and ch_value != 'None' else 0
+                        disc_ano.faltas = int(faltas_value) if faltas_value and faltas_value != '' and faltas_value != 'None' else 0
                         disc_ano.resultado = request.form.get(resultado_key, 'P')
                         
                         # Calcular frequência
@@ -394,13 +411,13 @@ def lancar_notas(id):
             if historico.conclusao_curso:
                 # Converter ano_conclusao para data (usando 1º de janeiro do ano)
                 ano_conclusao = request.form.get('ano_conclusao')
-                if ano_conclusao and ano_conclusao != '':
+                if ano_conclusao and ano_conclusao != '' and ano_conclusao != 'None':
                     historico.data_conclusao = datetime(int(ano_conclusao), 1, 1).date()
                 else:
                     historico.data_conclusao = None
                 
                 amparo_value = request.form.get('amparo_conclusao_id')
-                historico.amparo_conclusao_id = int(amparo_value) if amparo_value and amparo_value != '' else None
+                historico.amparo_conclusao_id = int(amparo_value) if amparo_value and amparo_value != '' and amparo_value != 'None' else None
             
             # Processar assinaturas e dados adicionais
             historico.nome_diretor = request.form.get('nome_diretor')
@@ -408,7 +425,9 @@ def lancar_notas(id):
             historico.data_emissao = datetime.strptime(request.form['data_emissao'], '%Y-%m-%d').date() if request.form.get('data_emissao') else None
             
             db.session.commit()
+            print("✅ DEBUG LANCAR_NOTAS: Commit realizado com sucesso!")
             flash('Notas e informações salvas com sucesso!', 'success')
+            print(f"🔄 DEBUG LANCAR_NOTAS: Redirecionando para visualizar ID {id}")
             return redirect(url_for('historicos.visualizar', id=id))
             
         except Exception as e:
@@ -430,7 +449,17 @@ def lancar_notas(id):
 @bp.route('/visualizar/<int:id>')
 def visualizar(id):
     """Visualiza um histórico completo"""
-    historico = Historico.query.get_or_404(id)
+    historico = Historico.query.options(
+        db.joinedload(Historico.anos_letivos)
+          .joinedload(HistoricoAnoLetivo.disciplinas)
+          .joinedload(HistoricoAnoDisciplina.disciplina_historica)
+    ).get_or_404(id)
+    
+    print(f"\n👁️ DEBUG VISUALIZAR: Histórico ID {id}")
+    print(f"📊 Total de anos letivos: {len(historico.anos_letivos)}")
+    for ano in historico.anos_letivos:
+        print(f"  📅 Ano {ano.ano} ({ano.serie}): {len(ano.disciplinas)} disciplinas")
+    
     return render_template('historicos/visualizar.html', historico=historico)
 
 @bp.route('/gerar-pdf/<int:id>')
@@ -556,12 +585,29 @@ def auto_save():
             
             # Adicionar disciplinas do ano
             for disc_info in ano_info.get('disciplinas', []):
-                ano_disciplina = HistoricoAnoDisciplina(
-                    ano_letivo_id=ano_letivo.id,
-                    disciplina_id=disc_info['disciplina_id'],
-                    nota=disc_info.get('nota')
-                )
-                db.session.add(ano_disciplina)
+                disc_id = disc_info.get('disciplina_id')
+                if disc_id:
+                    # Buscar disciplina para pegar carga horária padrão
+                    disciplina = DisciplinaHistorica.query.get(disc_id)
+                    if disciplina:
+                        nota_str = disc_info.get('nota', '').strip()
+                        nota_final = None
+                        if nota_str and nota_str not in ['A', 'EV', 'PD']:
+                            try:
+                                nota_final = float(nota_str)
+                            except:
+                                nota_final = None
+                        
+                        ano_disciplina = HistoricoAnoDisciplina(
+                            ano_letivo_id=ano_letivo.id,
+                            disciplina_historica_id=disc_id,
+                            nota_final=nota_final,
+                            carga_horaria=disciplina.carga_horaria_padrao or 0,
+                            faltas=0,
+                            frequencia=100.0,
+                            resultado='P'
+                        )
+                        db.session.add(ano_disciplina)
         
         db.session.commit()
         
